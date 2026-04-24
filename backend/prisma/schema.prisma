@@ -1,0 +1,122 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id        String   @id @default(uuid())
+  username  String   @unique
+  email     String   @unique
+  password  String
+  role      Role     @default(VIEWER)
+  isActive  Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  auditLogs AuditLog[]
+}
+
+enum Role {
+  ADMIN
+  EDITOR
+  VIEWER
+}
+
+model Department {
+  id       String  @id @default(uuid())
+  code     String  @unique
+  name     String
+  isActive Boolean @default(true)
+
+  devices Device[]
+}
+
+model OperatingSystem {
+  id          String  @id @default(uuid())
+  name        String  @unique
+  version     String
+  licenseType String
+  isActive    Boolean @default(true)
+
+  devices Device[]
+}
+
+model MicrosoftSoftware {
+  id          String  @id @default(uuid())
+  type        MsType
+  version     String
+  licenseType String
+  isActive    Boolean @default(true)
+
+  officeDevices  Device[] @relation("DeviceOffice")
+  visioDevices   Device[] @relation("DeviceVisio")
+  projectDevices Device[] @relation("DeviceProject")
+  accessDevices  Device[] @relation("DeviceAccess")
+
+  @@unique([type, version, licenseType])
+}
+
+enum MsType {
+  OFFICE
+  VISIO
+  PROJECT
+  ACCESS
+}
+
+model UnitType {
+  id       String  @id @default(uuid())
+  code     String  @unique
+  name     String
+  isActive Boolean @default(true)
+
+  devices Device[]
+}
+
+model Device {
+  id           String  @id @default(uuid())
+  serialNumber String  @unique
+  assetCode    String?
+  userName     String?
+
+  department   Department @relation(fields: [departmentId], references: [id])
+  departmentId String
+
+  unitType   UnitType @relation(fields: [unitTypeId], references: [id])
+  unitTypeId String
+
+  operatingSystem   OperatingSystem? @relation(fields: [operatingSystemId], references: [id])
+  operatingSystemId String?
+
+  office   MicrosoftSoftware? @relation("DeviceOffice", fields: [officeId], references: [id])
+  officeId String?
+
+  visio   MicrosoftSoftware? @relation("DeviceVisio", fields: [visioId], references: [id])
+  visioId String?
+
+  project   MicrosoftSoftware? @relation("DeviceProject", fields: [projectId], references: [id])
+  projectId String?
+
+  access   MicrosoftSoftware? @relation("DeviceAccess", fields: [accessId], references: [id])
+  accessId String?
+
+  notes     String?
+  isActive  Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model AuditLog {
+  id        String   @id @default(uuid())
+  action    String
+  tableName String
+  recordId  String?
+  oldData   Json?
+  newData   Json?
+  userId    String
+  user      User     @relation(fields: [userId], references: [id])
+  createdAt DateTime @default(now())
+}

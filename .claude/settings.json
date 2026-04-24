@@ -1,0 +1,10 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(npx prisma *)",
+      "Bash(./node_modules/.bin/prisma generate *)",
+      "PowerShell(Get-ChildItem \"d:\\\\PROJECT\\\\audit\\\\backend\\\\node_modules\" -ErrorAction SilentlyContinue | Select-Object -First 10 | Select-Object Name; if \\(-not \\(Test-Path \"d:\\\\PROJECT\\\\audit\\\\backend\\\\node_modules\"\\)\\) { Write-Host \"node_modules NOT found\" })",
+      "PowerShell($items = Get-ChildItem \"d:\\\\PROJECT\\\\audit\\\\backend\\\\node_modules\" -Name 2>&1 | Select-Object -First 5; $items; Write-Host \"Count: $\\($items.Count\\)\")"
+    ]
+  }
+}
