@@ -1,5 +1,24 @@
+import fs from "fs";
+import path from "path";
 import prisma from "../../config/database";
 import { AppError } from "../../middleware/errorHandler";
+
+const UPLOADS_DIR = path.resolve(process.cwd(), "uploads");
+
+const deleteProofFile = (relativePath: string | null) => {
+  if (!relativePath) return;
+  // stored paths are like /uploads/evidence/SN-001/file.jpg
+  const rel = relativePath.replace(/^\/uploads\//, "");
+  const fullPath = path.join(UPLOADS_DIR, rel);
+  fs.unlink(fullPath, () => undefined);
+};
+
+const deleteProofDir = (serialNumber: string | null) => {
+  if (!serialNumber) return;
+  const safeSerial = serialNumber.replace(/[^a-zA-Z0-9_-]/g, "_");
+  const dir = path.join(UPLOADS_DIR, "evidence", safeSerial);
+  fs.rm(dir, { recursive: true, force: true }, () => undefined);
+};
 
 const deviceInclude = {
   department: true,
@@ -10,6 +29,61 @@ const deviceInclude = {
   project: true,
   access: true,
 };
+
+const labelSoftware = (name: string, version: string, licenseType: string) =>
+  `${name} ${version} ${licenseType}`;
+
+const buildHistorySnapshot = (device: {
+  userName: string | null;
+  department: { code: string; name: string } | null;
+  unitType: { code: string; name: string } | null;
+  operatingSystem: { version: string; licenseType: string } | null;
+  office: { version: string; licenseType: string } | null;
+  visio: { version: string; licenseType: string } | null;
+  project: { version: string; licenseType: string } | null;
+  access: { version: string; licenseType: string } | null;
+  serialNumberProofPath: string | null;
+  operatingSystemProofPath: string | null;
+  officeProofPath: string | null;
+  visioProofPath: string | null;
+  projectProofPath: string | null;
+  accessProofPath: string | null;
+}) => ({
+  userName: device.userName,
+  departmentCode: device.department?.code,
+  departmentName: device.department?.name,
+  unitTypeCode: device.unitType?.code,
+  unitTypeName: device.unitType?.name,
+  operatingSystemLabel: device.operatingSystem
+    ? labelSoftware(
+        "Windows",
+        device.operatingSystem.version,
+        device.operatingSystem.licenseType,
+      )
+    : null,
+  officeLabel: device.office
+    ? labelSoftware("Office", device.office.version, device.office.licenseType)
+    : null,
+  visioLabel: device.visio
+    ? labelSoftware("Visio", device.visio.version, device.visio.licenseType)
+    : null,
+  projectLabel: device.project
+    ? labelSoftware(
+        "Project",
+        device.project.version,
+        device.project.licenseType,
+      )
+    : null,
+  accessLabel: device.access
+    ? labelSoftware("Access", device.access.version, device.access.licenseType)
+    : null,
+  serialNumberProofPath: device.serialNumberProofPath,
+  operatingSystemProofPath: device.operatingSystemProofPath,
+  officeProofPath: device.officeProofPath,
+  visioProofPath: device.visioProofPath,
+  projectProofPath: device.projectProofPath,
+  accessProofPath: device.accessProofPath,
+});
 
 export const getDevices = async (filters: {
   departmentId?: string;
@@ -76,19 +150,36 @@ export const createDevice = async (
     projectId?: string;
     accessId?: string;
     notes?: string;
+    serialNumberProofPath?: string;
+    operatingSystemProofPath?: string;
+    officeProofPath?: string;
+    visioProofPath?: string;
+    projectProofPath?: string;
+    accessProofPath?: string;
   },
   userId: string,
 ) => {
-  const device = await prisma.device.create({ data, include: deviceInclude });
+  const device = await prisma.$transaction(async (tx) => {
+    const created = await tx.device.create({ data, include: deviceInclude });
 
-  await prisma.auditLog.create({
-    data: {
-      action: "CREATE",
-      tableName: "devices",
-      recordId: device.id,
-      newData: device as unknown as object,
-      userId,
-    },
+    await tx.deviceAssignmentHistory.create({
+      data: {
+        deviceId: created.id,
+        ...buildHistorySnapshot(created),
+      },
+    });
+
+    await tx.auditLog.create({
+      data: {
+        action: "CREATE",
+        tableName: "devices",
+        recordId: created.id,
+        newData: created as unknown as object,
+        userId,
+      },
+    });
+
+    return created;
   });
 
   return device;
@@ -138,5 +229,101 @@ export const deleteDevice = async (id: string, userId: string) => {
       oldData: existing as unknown as object,
       userId,
     },
+  });
+
+  // Delete all associated proof files and the serial number subfolder
+  deleteProofFile(existing.serialNumberProofPath);
+  deleteProofFile(existing.operatingSystemProofPath);
+  deleteProofFile(existing.officeProofPath);
+  deleteProofFile(existing.visioProofPath);
+  deleteProofFile(existing.projectProofPath);
+  deleteProofFile(existing.accessProofPath);
+  deleteProofDir(existing.serialNumber);
+};
+
+export const reassignDevice = async (
+  id: string,
+  data: {
+    userName: string;
+    departmentId?: string;
+    unitTypeId?: string;
+    operatingSystemId?: string | null;
+    officeId?: string | null;
+    visioId?: string | null;
+    projectId?: string | null;
+    accessId?: string | null;
+    reassignmentNote?: string;
+    serialNumberProofPath?: string | null;
+    operatingSystemProofPath?: string | null;
+    officeProofPath?: string | null;
+    visioProofPath?: string | null;
+    projectProofPath?: string | null;
+    accessProofPath?: string | null;
+  },
+  userId: string,
+) => {
+  const existing = await prisma.device.findUnique({ where: { id } });
+  if (!existing || !existing.isActive)
+    throw new AppError("Device not found", 404);
+
+  const updated = await prisma.$transaction(async (tx) => {
+    await tx.deviceAssignmentHistory.updateMany({
+      where: { deviceId: id, endedAt: null },
+      data: { endedAt: new Date() },
+    });
+
+    const reassigned = await tx.device.update({
+      where: { id },
+      data: {
+        userName: data.userName,
+        departmentId: data.departmentId,
+        unitTypeId: data.unitTypeId,
+        operatingSystemId: data.operatingSystemId ?? null,
+        officeId: data.officeId ?? null,
+        visioId: data.visioId ?? null,
+        projectId: data.projectId ?? null,
+        accessId: data.accessId ?? null,
+        serialNumberProofPath: data.serialNumberProofPath ?? null,
+        operatingSystemProofPath: data.operatingSystemProofPath ?? null,
+        officeProofPath: data.officeProofPath ?? null,
+        visioProofPath: data.visioProofPath ?? null,
+        projectProofPath: data.projectProofPath ?? null,
+        accessProofPath: data.accessProofPath ?? null,
+      },
+      include: deviceInclude,
+    });
+
+    await tx.deviceAssignmentHistory.create({
+      data: {
+        deviceId: reassigned.id,
+        reassignmentNote: data.reassignmentNote,
+        ...buildHistorySnapshot(reassigned),
+      },
+    });
+
+    await tx.auditLog.create({
+      data: {
+        action: "REASSIGN",
+        tableName: "devices",
+        recordId: id,
+        oldData: existing as unknown as object,
+        newData: reassigned as unknown as object,
+        userId,
+      },
+    });
+
+    return reassigned;
+  });
+
+  return updated;
+};
+
+export const getDeviceAssignmentHistory = async (deviceId: string) => {
+  const device = await prisma.device.findUnique({ where: { id: deviceId } });
+  if (!device) throw new AppError("Device not found", 404);
+
+  return prisma.deviceAssignmentHistory.findMany({
+    where: { deviceId },
+    orderBy: [{ assignedAt: "desc" }],
   });
 };

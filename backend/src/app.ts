@@ -2,6 +2,7 @@ import express from "express";
 import cors from "cors";
 import helmet from "helmet";
 import morgan from "morgan";
+import path from "path";
 import "dotenv/config";
 
 import { errorHandler } from "./middleware/errorHandler";
@@ -15,6 +16,7 @@ import reportsRoutes from "./modules/reports/reports.routes";
 import importRoutes from "./modules/import/import.routes";
 import exportRoutes from "./modules/export/export.routes";
 import usersRoutes from "./modules/users/users.routes";
+import uploadsRoutes from "./modules/uploads/uploads.routes";
 import { env } from "./config/env";
 
 const app = express();
@@ -28,6 +30,11 @@ app.use(
 );
 app.use(morgan("dev"));
 app.use(express.json());
+app.use("/uploads", (_req, res, next) => {
+  res.setHeader("Cross-Origin-Resource-Policy", "cross-origin");
+  res.removeHeader("X-Frame-Options");
+  next();
+}, express.static(path.resolve(process.cwd(), "uploads")));
 
 // Routes
 app.use("/api/auth", authRoutes);
@@ -40,6 +47,7 @@ app.use("/api/reports", reportsRoutes);
 app.use("/api/import", importRoutes);
 app.use("/api/export", exportRoutes);
 app.use("/api/users", usersRoutes);
+app.use("/api/uploads", uploadsRoutes);
 
 app.get("/api/health", (_req, res) => {
   res.json({ status: "ok", timestamp: new Date().toISOString() });

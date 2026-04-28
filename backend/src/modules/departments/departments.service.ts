@@ -20,13 +20,14 @@ export const getDepartmentById = async (id: string) => {
 export const createDepartment = async (data: {
   code: string;
   name: string;
+  description?: string;
 }) => {
   return prisma.department.create({ data });
 };
 
 export const updateDepartment = async (
   id: string,
-  data: { code?: string; name?: string; isActive?: boolean },
+  data: { code?: string; name?: string; description?: string; isActive?: boolean },
 ) => {
   const dept = await prisma.department.findUnique({ where: { id } });
   if (!dept) throw new AppError("Department not found", 404);

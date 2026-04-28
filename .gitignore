@@ -2,6 +2,7 @@
 node_modules/
 .pnpm-store/
 .yarn/
+.claude/
 
 # ── Environment & Secrets ─────────────────────────────────
 .env

@@ -13,8 +13,10 @@ export const getById = async (id: string) => {
   return ut;
 };
 
-export const create = async (data: { code: string; name: string }) =>
-  prisma.unitType.create({ data });
+export const create = async (data: {
+  code: string;
+  name: string;
+}) => prisma.unitType.create({ data });
 
 export const update = async (
   id: string,

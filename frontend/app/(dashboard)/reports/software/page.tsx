@@ -1,26 +1,59 @@
-﻿"use client"
+"use client"
 
 import { useState } from "react"
+import type { ColumnDef } from "@tanstack/react-table"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
+import { DataTable } from "@/components/ui/data-table"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Badge } from "@/components/ui/badge"
-import { Skeleton } from "@/components/ui/skeleton"
 import { useSoftwareReport } from "@/hooks/use-reports"
 
 type MsType = "OS" | "OFFICE" | "VISIO" | "PROJECT" | "ACCESS"
 
+type SoftwareRow = { id: string; version: string; licenseType: string; count: number; percentage: number }
+
+const columns: ColumnDef<SoftwareRow>[] = [
+  { accessorKey: "version", header: "Nama/Versi", cell: ({ row }) => <span className="font-medium">{row.original.version}</span> },
+  { accessorKey: "licenseType", header: "Tipe Lisensi", cell: ({ row }) => <Badge variant="outline">{row.original.licenseType}</Badge> },
+  { accessorKey: "count", header: "Jumlah Device" },
+  {
+    accessorKey: "percentage",
+    header: "Persentase",
+    cell: ({ row }) => <span>{row.original.percentage?.toFixed(1) ?? 0}%</span>,
+  },
+]
+
+const tabs: { value: MsType; label: string }[] = [
+  { value: "OS", label: "Operating System" },
+  { value: "OFFICE", label: "Office" },
+  { value: "VISIO", label: "Visio" },
+  { value: "PROJECT", label: "Project" },
+  { value: "ACCESS", label: "Access" },
+]
+
+function SoftwareTab({ type, label }: { type: MsType; label: string }) {
+  const { data: report, isLoading } = useSoftwareReport(type)
+  return (
+    <Card>
+      <CardHeader>
+        <CardTitle>Distribusi {label}</CardTitle>
+        <CardDescription>Jumlah device per versi {label}</CardDescription>
+      </CardHeader>
+      <CardContent className="p-0">
+        <DataTable
+          columns={columns}
+          data={(report ?? []) as SoftwareRow[]}
+          isLoading={isLoading}
+          searchable={false}
+          paginated={false}
+        />
+      </CardContent>
+    </Card>
+  )
+}
+
 export default function SoftwareReportPage() {
   const [activeTab, setActiveTab] = useState<MsType>("OS")
-  const { data: report, isLoading } = useSoftwareReport(activeTab)
-
-  const tabs: { value: MsType; label: string }[] = [
-    { value: "OS", label: "Operating System" },
-    { value: "OFFICE", label: "Office" },
-    { value: "VISIO", label: "Visio" },
-    { value: "PROJECT", label: "Project" },
-    { value: "ACCESS", label: "Access" },
-  ]
 
   return (
     <div className="space-y-6">
@@ -35,47 +68,7 @@ export default function SoftwareReportPage() {
         </TabsList>
         {tabs.map(t => (
           <TabsContent key={t.value} value={t.value}>
-            <Card>
-              <CardHeader>
-                <CardTitle>Distribusi {t.label}</CardTitle>
-                <CardDescription>Jumlah device per versi {t.label}</CardDescription>
-              </CardHeader>
-              <CardContent className="p-0">
-                <Table>
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead>Nama/Versi</TableHead>
-                      <TableHead>Tipe Lisensi</TableHead>
-                      <TableHead className="text-right">Jumlah Device</TableHead>
-                      <TableHead className="text-right">Persentase</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {isLoading && Array.from({length:4}).map((_,i)=>(
-                      <TableRow key={i}>{Array.from({length:4}).map((__,j)=><TableCell key={j}><Skeleton className="h-4 w-full"/></TableCell>)}</TableRow>
-                    ))}
-                    {!isLoading && (report ?? []).map((r: {
-                      version: string
-                      licenseType: string
-                      count: number
-                      percentage: number
-                    }, i: number) => (
-                      <TableRow key={i}>
-                        <TableCell className="font-medium">{r.version}</TableCell>
-                        <TableCell><Badge variant="outline">{r.licenseType}</Badge></TableCell>
-                        <TableCell className="text-right">{r.count}</TableCell>
-                        <TableCell className="text-right">{r.percentage?.toFixed(1) ?? 0}%</TableCell>
-                      </TableRow>
-                    ))}
-                    {!isLoading && (report ?? []).length === 0 && (
-                      <TableRow>
-                        <TableCell colSpan={4} className="text-center py-8 text-muted-foreground">Tidak ada data</TableCell>
-                      </TableRow>
-                    )}
-                  </TableBody>
-                </Table>
-              </CardContent>
-            </Card>
+            <SoftwareTab type={t.value} label={t.label} />
           </TabsContent>
         ))}
       </Tabs>

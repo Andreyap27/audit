@@ -2,6 +2,7 @@ import { Response, NextFunction } from "express";
 import { AuthRequest } from "../../middleware/auth";
 import {
   createDeviceSchema,
+  reassignDeviceSchema,
   updateDeviceSchema,
   deviceFilterSchema,
 } from "./devices.schema";
@@ -32,7 +33,7 @@ export const getById = async (
   next: NextFunction,
 ): Promise<void> => {
   try {
-    res.json(await service.getDeviceById(req.params.id));
+    res.json(await service.getDeviceById(req.params.id as string));
   } catch (err) {
     next(err);
   }
@@ -71,7 +72,11 @@ export const update = async (
       return;
     }
     res.json(
-      await service.updateDevice(req.params.id, parsed.data, req.user!.id),
+      await service.updateDevice(
+        req.params.id as string,
+        parsed.data,
+        req.user!.id,
+      ),
     );
   } catch (err) {
     next(err);
@@ -84,8 +89,45 @@ export const remove = async (
   next: NextFunction,
 ): Promise<void> => {
   try {
-    await service.deleteDevice(req.params.id, req.user!.id);
+    await service.deleteDevice(req.params.id as string, req.user!.id);
     res.json({ message: "Device deleted" });
+  } catch (err) {
+    next(err);
+  }
+};
+
+export const reassign = async (
+  req: AuthRequest,
+  res: Response,
+  next: NextFunction,
+): Promise<void> => {
+  try {
+    const parsed = reassignDeviceSchema.safeParse(req.body);
+    if (!parsed.success) {
+      res
+        .status(400)
+        .json({ message: "Validation error", errors: parsed.error.flatten() });
+      return;
+    }
+    res.json(
+      await service.reassignDevice(
+        req.params.id as string,
+        parsed.data,
+        req.user!.id,
+      ),
+    );
+  } catch (err) {
+    next(err);
+  }
+};
+
+export const getHistory = async (
+  req: AuthRequest,
+  res: Response,
+  next: NextFunction,
+): Promise<void> => {
+  try {
+    res.json(await service.getDeviceAssignmentHistory(req.params.id as string));
   } catch (err) {
     next(err);
   }

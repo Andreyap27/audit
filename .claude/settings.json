@@ -4,7 +4,27 @@
       "Bash(npx prisma *)",
       "Bash(./node_modules/.bin/prisma generate *)",
       "PowerShell(Get-ChildItem \"d:\\\\PROJECT\\\\audit\\\\backend\\\\node_modules\" -ErrorAction SilentlyContinue | Select-Object -First 10 | Select-Object Name; if \\(-not \\(Test-Path \"d:\\\\PROJECT\\\\audit\\\\backend\\\\node_modules\"\\)\\) { Write-Host \"node_modules NOT found\" })",
-      "PowerShell($items = Get-ChildItem \"d:\\\\PROJECT\\\\audit\\\\backend\\\\node_modules\" -Name 2>&1 | Select-Object -First 5; $items; Write-Host \"Count: $\\($items.Count\\)\")"
+      "PowerShell($items = Get-ChildItem \"d:\\\\PROJECT\\\\audit\\\\backend\\\\node_modules\" -Name 2>&1 | Select-Object -First 5; $items; Write-Host \"Count: $\\($items.Count\\)\")",
+      "Bash(node_modules/.bin/tsc --noEmit)",
+      "Bash(.\\\\node_modules\\\\.bin\\\\prisma migrate *)",
+      "PowerShell(cd d:\\\\PROJECT\\\\audit\\\\backend; $env:PRISMA_MIGRATE_SKIP_GENERATE = \"0\"; .\\\\node_modules\\\\.bin\\\\prisma db push 2>&1)",
+      "PowerShell(cd d:\\\\PROJECT\\\\audit\\\\backend; [System.Text.Encoding]::UTF8.GetBytes\\('UPDATE \"UnitType\" SET slug = LOWER\\(code\\) WHERE slug IS NULL;'\\) | .\\\\node_modules\\\\.bin\\\\prisma db execute --stdin 2>&1)",
+      "Bash(./node_modules/.bin/prisma db *)",
+      "Bash(npm install *)",
+      "Bash(npx ts-node -e ' *)",
+      "Bash(node -e ' *)",
+      "Bash(curl -s http://localhost:3001/api/health)",
+      "Bash(curl -s http://localhost:3001/api/unit-types)",
+      "Bash(curl -s -X POST http://localhost:3001/api/auth/login -H \"Content-Type: application/json\" -d '{\"username\":\"admin\",\"password\":\"admin123\"}')",
+      "Bash(node -e \"process.stdin.setEncoding\\('utf8'\\); let d=''; process.stdin.on\\('data',c=>d+=c\\); process.stdin.on\\('end',\\(\\)=>console.log\\(d.slice\\(0,200\\)\\)\\)\")",
+      "Bash(curl -s -X POST http://localhost:3001/api/auth/login -H \"Content-Type: application/json\" -d \"{\\\\\"username\\\\\":\\\\\"admin\\\\\",\\\\\"password\\\\\":\\\\\"admin123\\\\\"}\")",
+      "Bash(curl -s -X POST http://localhost:3001/api/auth/login -H \"Content-Type: application/json\" -d \"{\\\\\"email\\\\\":\\\\\"admin@example.com\\\\\",\\\\\"password\\\\\":\\\\\"admin123\\\\\"}\")",
+      "Bash(curl -s -X POST http://localhost:3001/api/auth/login -H \"Content-Type: application/json\" -d \"{\\\\\"email\\\\\":\\\\\"admin@company.com\\\\\",\\\\\"password\\\\\":\\\\\"admin123\\\\\"}\")",
+      "Bash(curl -s -H 'Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6IjA5ODcxZWY5LThmZjItNDZlYi1hZWVlLTU3ZWRlMjRmOGEzYSIsInJvbGUiOiJBRE1JTiIsImlhdCI6MTc3NzI1NDcxNywiZXhwIjoxNzc3ODU5NTE3fQ.RQ5mxJGFGbsBuVdvDOQBlg5KeXd1Iz5hMpB06AZO0mg' http://localhost:3001/api/unit-types)",
+      "Bash(npx tsc *)",
+      "Bash(netstat -ano)",
+      "Bash(powershell -Command \"Get-Process -Id 163784 | Select-Object Name, CommandLine, MainModule\")",
+      "Bash(wmic process *)"
     ]
   }
 }

@@ -1,9 +1,19 @@
-﻿"use client"
+"use client"
 
+import type { ColumnDef } from "@tanstack/react-table"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
-import { Skeleton } from "@/components/ui/skeleton"
+import { DataTable } from "@/components/ui/data-table"
 import { useDepartmentReport } from "@/hooks/use-reports"
+
+type DeptReport = { dept: string; deptName: string; total: number; nb: number; ws: number }
+
+const columns: ColumnDef<DeptReport>[] = [
+  { accessorKey: "dept", header: "Kode", cell: ({ row }) => <span className="font-mono">{row.original.dept}</span> },
+  { accessorKey: "deptName", header: "Departemen" },
+  { accessorKey: "total", header: "Total Device", cell: ({ row }) => <span className="font-medium">{row.original.total}</span> },
+  { accessorKey: "nb", header: "NB" },
+  { accessorKey: "ws", header: "WS" },
+]
 
 export default function DepartmentReportPage() {
   const { data: report, isLoading } = useDepartmentReport()
@@ -21,37 +31,12 @@ export default function DepartmentReportPage() {
           <CardDescription>Total {report?.length ?? 0} departemen</CardDescription>
         </CardHeader>
         <CardContent className="p-0">
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>Kode</TableHead>
-                <TableHead>Departemen</TableHead>
-                <TableHead className="text-right">Total Device</TableHead>
-                <TableHead className="text-right">NB</TableHead>
-                <TableHead className="text-right">WS</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {isLoading && Array.from({length:5}).map((_,i)=>(
-                <TableRow key={i}>{Array.from({length:5}).map((__,j)=><TableCell key={j}><Skeleton className="h-4 w-full"/></TableCell>)}</TableRow>
-              ))}
-              {!isLoading && (report ?? []).map((d: {
-                code: string
-                name: string
-                totalDevices: number
-                totalNB: number
-                totalWS: number
-              }) => (
-                <TableRow key={d.code}>
-                  <TableCell className="font-mono">{d.code}</TableCell>
-                  <TableCell>{d.name}</TableCell>
-                  <TableCell className="text-right font-medium">{d.totalDevices}</TableCell>
-                  <TableCell className="text-right">{d.totalNB}</TableCell>
-                  <TableCell className="text-right">{d.totalWS}</TableCell>
-                </TableRow>
-              ))}
-            </TableBody>
-          </Table>
+          <DataTable
+            columns={columns}
+            data={(report ?? []) as DeptReport[]}
+            isLoading={isLoading}
+            searchable={false}
+          />
         </CardContent>
       </Card>
     </div>

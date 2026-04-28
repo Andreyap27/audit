@@ -24,7 +24,7 @@ export const getById = async (
   next: NextFunction,
 ): Promise<void> => {
   try {
-    res.json(await service.getDepartmentById(req.params.id));
+    res.json(await service.getDepartmentById(req.params.id as string));
   } catch (err) {
     next(err);
   }
@@ -62,7 +62,7 @@ export const update = async (
         .json({ message: "Validation error", errors: parsed.error.flatten() });
       return;
     }
-    res.json(await service.updateDepartment(req.params.id, parsed.data));
+    res.json(await service.updateDepartment(req.params.id as string, parsed.data));
   } catch (err) {
     next(err);
   }
@@ -74,7 +74,7 @@ export const remove = async (
   next: NextFunction,
 ): Promise<void> => {
   try {
-    await service.deleteDepartment(req.params.id);
+    await service.deleteDepartment(req.params.id as string);
     res.json({ message: "Department deactivated" });
   } catch (err) {
     next(err);

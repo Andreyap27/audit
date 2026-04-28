@@ -1,34 +1,25 @@
-﻿"use client"
+"use client"
 
 import { useState } from "react"
 import { useParams } from "next/navigation"
+import type { ColumnDef } from "@tanstack/react-table"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
+import { DataTable } from "@/components/ui/data-table"
 import { Badge } from "@/components/ui/badge"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog"
 import { Label } from "@/components/ui/label"
-import { Skeleton } from "@/components/ui/skeleton"
 import { Plus, Pencil, Trash2 } from "lucide-react"
-import { toast } from "sonner"
 import { useMicrosoftSoftware, useCreateMicrosoft, useUpdateMicrosoft, useDeleteMicrosoft } from "@/hooks/use-master"
+import { useGlobalModal } from "@/lib/global-modal"
 
 type MsType = "OFFICE" | "VISIO" | "PROJECT" | "ACCESS"
-const TYPE_MAP: Record<string, MsType> = {
-  office: "OFFICE",
-  visio: "VISIO",
-  project: "PROJECT",
-  access: "ACCESS",
-}
-const LABEL_MAP: Record<MsType, string> = {
-  OFFICE: "Microsoft Office",
-  VISIO: "Microsoft Visio",
-  PROJECT: "Microsoft Project",
-  ACCESS: "Microsoft Access",
-}
+const TYPE_MAP: Record<string, MsType> = { office: "OFFICE", visio: "VISIO", project: "PROJECT", access: "ACCESS" }
+const LABEL_MAP: Record<MsType, string> = { OFFICE: "Microsoft Office", VISIO: "Microsoft Visio", PROJECT: "Microsoft Project", ACCESS: "Microsoft Access" }
 
+type MsRow = { id: string; version: string; licenseType: string }
 type MsForm = { version: string; licenseType: string }
 
 export default function MicrosoftPage() {
@@ -41,37 +32,66 @@ export default function MicrosoftPage() {
   const createMut = useCreateMicrosoft()
   const updateMut = useUpdateMicrosoft()
   const deleteMut = useDeleteMicrosoft()
+  const modal = useGlobalModal()
 
   const [open, setOpen] = useState(false)
   const [editId, setEditId] = useState<string | null>(null)
   const [form, setForm] = useState<MsForm>({ version: "", licenseType: "OEM" })
 
   const openAdd = () => { setEditId(null); setForm({ version: "", licenseType: "OEM" }); setOpen(true) }
-  const openEdit = (o: { id: string; version: string; licenseType: string }) => {
-    setEditId(o.id); setForm({ version: o.version, licenseType: o.licenseType }); setOpen(true)
-  }
+  const openEdit = (o: MsRow) => { setEditId(o.id); setForm({ version: o.version, licenseType: o.licenseType }); setOpen(true) }
 
   const handleSave = async () => {
-    if (!form.version) { toast.error("Versi wajib diisi"); return }
+    if (!form.version) { modal.error({ title: "Versi wajib diisi" }); return }
     try {
       if (editId) {
-        await updateMut.mutateAsync({ id: editId, data: { ...form, type: msType } })
-        toast.success(`${label} berhasil diperbarui`)
+        await updateMut.mutateAsync({ id: editId, ...form, type: msType })
+        modal.success({ title: `${label} berhasil diperbarui` })
       } else {
         await createMut.mutateAsync({ ...form, type: msType })
-        toast.success(`${label} berhasil ditambahkan`)
+        modal.success({ title: `${label} berhasil ditambahkan` })
       }
       setOpen(false)
-    } catch { toast.error(`Gagal menyimpan ${label}`) }
+    } catch { modal.error({ title: `Gagal menyimpan ${label}` }) }
   }
 
   const handleDelete = async (id: string) => {
-    if (!confirm(`Hapus entri ini?`)) return
+    const ok = await modal.confirm({ title: "Hapus entri ini?", confirmText: "Hapus" })
+    if (!ok) return
     try {
       await deleteMut.mutateAsync(id)
-      toast.success("Berhasil dihapus")
-    } catch { toast.error("Gagal menghapus") }
+      modal.success({ title: "Berhasil dihapus" })
+    } catch { modal.error({ title: "Gagal menghapus" }) }
   }
+
+  const shortLabel = label.split(" ")[1]
+
+  const columns: ColumnDef<MsRow>[] = [
+    {
+      accessorKey: "version",
+      header: "Versi",
+      cell: ({ row }) => <span className="font-medium">{shortLabel} {row.original.version}</span>,
+    },
+    {
+      accessorKey: "licenseType",
+      header: "Tipe Lisensi",
+      cell: ({ row }) => <Badge variant="outline">{row.original.licenseType}</Badge>,
+    },
+    {
+      id: "actions",
+      header: "Aksi",
+      cell: ({ row }) => (
+        <div className="flex justify-end gap-2">
+          <Button variant="ghost" size="icon" onClick={() => openEdit(row.original)}>
+            <Pencil className="h-4 w-4" />
+          </Button>
+          <Button variant="ghost" size="icon" onClick={() => void handleDelete(row.original.id)}>
+            <Trash2 className="h-4 w-4 text-destructive" />
+          </Button>
+        </div>
+      ),
+    },
+  ]
 
   return (
     <div className="space-y-6">
@@ -84,34 +104,15 @@ export default function MicrosoftPage() {
       </div>
 
       <Card>
-        <CardHeader><CardTitle>Daftar {label}</CardTitle><CardDescription>Total {items?.length ?? 0} entri</CardDescription></CardHeader>
+        <CardHeader>
+          <CardTitle>Daftar {label}</CardTitle>
+        </CardHeader>
         <CardContent className="p-0">
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>Versi</TableHead>
-                <TableHead>Tipe Lisensi</TableHead>
-                <TableHead className="text-right">Aksi</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {isLoading && Array.from({length:4}).map((_,i)=>(
-                <TableRow key={i}>{Array.from({length:3}).map((__,j)=><TableCell key={j}><Skeleton className="h-4 w-full"/></TableCell>)}</TableRow>
-              ))}
-              {!isLoading && (items ?? []).map((o: { id: string; version: string; licenseType: string }) => (
-                <TableRow key={o.id}>
-                  <TableCell className="font-medium">{label.split(" ")[1]} {o.version}</TableCell>
-                  <TableCell><Badge variant="outline">{o.licenseType}</Badge></TableCell>
-                  <TableCell className="text-right">
-                    <div className="flex justify-end gap-2">
-                      <Button variant="ghost" size="icon" onClick={() => openEdit(o)}><Pencil className="h-4 w-4"/></Button>
-                      <Button variant="ghost" size="icon" onClick={() => handleDelete(o.id)}><Trash2 className="h-4 w-4 text-destructive"/></Button>
-                    </div>
-                  </TableCell>
-                </TableRow>
-              ))}
-            </TableBody>
-          </Table>
+          <DataTable
+            columns={columns}
+            data={(items ?? []) as MsRow[]}
+            isLoading={isLoading}
+          />
         </CardContent>
       </Card>
 
@@ -122,10 +123,13 @@ export default function MicrosoftPage() {
             <DialogDescription>Isi data lisensi</DialogDescription>
           </DialogHeader>
           <div className="space-y-4">
-            <div><Label>Versi *</Label><Input value={form.version} onChange={e=>setForm(f=>({...f,version:e.target.value}))} placeholder="Contoh: 2021, 365"/></div>
+            <div>
+              <Label>Versi *</Label>
+              <Input value={form.version} onChange={e => setForm(f => ({ ...f, version: e.target.value }))} placeholder="Contoh: 2021, 365" />
+            </div>
             <div>
               <Label>Tipe Lisensi</Label>
-              <Select value={form.licenseType} onValueChange={v=>setForm(f=>({...f,licenseType:v}))}>
+              <Select value={form.licenseType} onValueChange={v => setForm(f => ({ ...f, licenseType: v }))}>
                 <SelectTrigger><SelectValue /></SelectTrigger>
                 <SelectContent>
                   <SelectItem value="OEM">OEM</SelectItem>
@@ -137,7 +141,7 @@ export default function MicrosoftPage() {
             </div>
           </div>
           <DialogFooter>
-            <Button variant="outline" onClick={()=>setOpen(false)}>Batal</Button>
+            <Button variant="outline" onClick={() => setOpen(false)}>Batal</Button>
             <Button onClick={handleSave} disabled={createMut.isPending || updateMut.isPending}>Simpan</Button>
           </DialogFooter>
         </DialogContent>

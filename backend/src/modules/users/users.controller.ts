@@ -25,7 +25,7 @@ export const getById = async (
   next: NextFunction,
 ): Promise<void> => {
   try {
-    res.json(await service.getById(req.params.id));
+    res.json(await service.getById(req.params.id as string));
   } catch (err) {
     next(err);
   }
@@ -63,7 +63,7 @@ export const update = async (
         .json({ message: "Validation error", errors: parsed.error.flatten() });
       return;
     }
-    res.json(await service.update(req.params.id, parsed.data));
+    res.json(await service.update(req.params.id as string, parsed.data));
   } catch (err) {
     next(err);
   }
@@ -82,7 +82,7 @@ export const resetPassword = async (
         .json({ message: "Validation error", errors: parsed.error.flatten() });
       return;
     }
-    await service.resetPassword(req.params.id, parsed.data.password);
+    await service.resetPassword(req.params.id as string, parsed.data.password);
     res.json({ message: "Password reset successful" });
   } catch (err) {
     next(err);

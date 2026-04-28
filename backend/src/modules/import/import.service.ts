@@ -56,7 +56,8 @@ export const importFromExcel = async (
   userId: string,
 ): Promise<ImportResults> => {
   const workbook = new ExcelJS.Workbook();
-  await workbook.xlsx.load(buffer);
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  await workbook.xlsx.load(buffer as any);
 
   const results: ImportResults = { success: 0, failed: 0, errors: [] };
 

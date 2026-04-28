@@ -36,7 +36,7 @@ export const getById = async (
   next: NextFunction,
 ): Promise<void> => {
   try {
-    res.json(await service.getById(req.params.id));
+    res.json(await service.getById(req.params.id as string));
   } catch (err) {
     next(err);
   }
@@ -74,7 +74,7 @@ export const update = async (
         .json({ message: "Validation error", errors: parsed.error.flatten() });
       return;
     }
-    res.json(await service.update(req.params.id, parsed.data));
+    res.json(await service.update(req.params.id as string, parsed.data));
   } catch (err) {
     next(err);
   }
@@ -86,7 +86,7 @@ export const remove = async (
   next: NextFunction,
 ): Promise<void> => {
   try {
-    await service.remove(req.params.id);
+    await service.remove(req.params.id as string);
     res.json({ message: "Microsoft software deactivated" });
   } catch (err) {
     next(err);

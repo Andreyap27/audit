@@ -1,58 +1,98 @@
-﻿"use client"
+"use client"
 
 import { useState } from "react"
+import type { ColumnDef } from "@tanstack/react-table"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
+import { DataTable } from "@/components/ui/data-table"
 import { Badge } from "@/components/ui/badge"
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog"
 import { Label } from "@/components/ui/label"
-import { Skeleton } from "@/components/ui/skeleton"
 import { Plus, Pencil, Power } from "lucide-react"
-import { toast } from "sonner"
-import { useDepartments, useCreateDepartment, useUpdateDepartment, useDeleteDepartment } from "@/hooks/use-master"
+import { useDepartments, useCreateDepartment, useUpdateDepartment } from "@/hooks/use-master"
+import { useGlobalModal } from "@/lib/global-modal"
 
+type DeptRow = { id: string; code: string; name: string; description: string | null; isActive: boolean }
 type DeptForm = { name: string; code: string; description: string }
 
 export default function DepartmentsPage() {
   const { data: departments, isLoading } = useDepartments()
   const createMut = useCreateDepartment()
   const updateMut = useUpdateDepartment()
-  const deleteMut = useDeleteDepartment()
+  const modal = useGlobalModal()
 
   const [open, setOpen] = useState(false)
   const [editId, setEditId] = useState<string | null>(null)
   const [form, setForm] = useState<DeptForm>({ name: "", code: "", description: "" })
 
   const openAdd = () => { setEditId(null); setForm({ name: "", code: "", description: "" }); setOpen(true) }
-  const openEdit = (d: { id: string; name: string; code: string; description: string | null }) => {
+  const openEdit = (d: DeptRow) => {
     setEditId(d.id); setForm({ name: d.name, code: d.code, description: d.description ?? "" }); setOpen(true)
   }
 
   const handleSave = async () => {
-    if (!form.name || !form.code) { toast.error("Nama dan Kode wajib diisi"); return }
+    if (!form.name || !form.code) { modal.error({ title: "Nama dan Kode wajib diisi" }); return }
     try {
       if (editId) {
-        await updateMut.mutateAsync({ id: editId, data: form })
-        toast.success("Departemen berhasil diperbarui")
+        await updateMut.mutateAsync({ id: editId, ...form })
+        modal.success({ title: "Departemen berhasil diperbarui" })
       } else {
         await createMut.mutateAsync(form)
-        toast.success("Departemen berhasil ditambahkan")
+        modal.success({ title: "Departemen berhasil ditambahkan" })
       }
       setOpen(false)
-    } catch { toast.error("Gagal menyimpan departemen") }
+    } catch { modal.error({ title: "Gagal menyimpan departemen" }) }
   }
 
-  const handleToggle = async (d: { id: string; isActive: boolean }) => {
+  const handleToggle = async (d: DeptRow) => {
+    const ok = await modal.confirm({
+      title: `${d.isActive ? "Nonaktifkan" : "Aktifkan"} departemen ini?`,
+      confirmText: d.isActive ? "Nonaktifkan" : "Aktifkan",
+    })
+    if (!ok) return
     try {
-      await updateMut.mutateAsync({ id: d.id, data: { isActive: !d.isActive } })
-      toast.success(`Departemen ${d.isActive ? "dinonaktifkan" : "diaktifkan"}`)
-    } catch (e: unknown) {
-      const msg = e instanceof Error ? e.message : "Gagal mengubah status"
-      toast.error(msg)
-    }
+      await updateMut.mutateAsync({ id: d.id, isActive: !d.isActive })
+      modal.success({ title: `Departemen ${d.isActive ? "dinonaktifkan" : "diaktifkan"}` })
+    } catch { modal.error({ title: "Gagal mengubah status" }) }
   }
+
+  const columns: ColumnDef<DeptRow>[] = [
+    {
+      accessorKey: "code",
+      header: "Kode",
+      cell: ({ row }) => <span className="font-mono font-medium">{row.original.code}</span>,
+    },
+    { accessorKey: "name", header: "Nama" },
+    {
+      accessorKey: "description",
+      header: "Deskripsi",
+      cell: ({ row }) => <span className="text-muted-foreground">{row.original.description ?? "-"}</span>,
+    },
+    {
+      accessorKey: "isActive",
+      header: "Status",
+      cell: ({ row }) => (
+        <Badge variant={row.original.isActive ? "default" : "secondary"}>
+          {row.original.isActive ? "Aktif" : "Nonaktif"}
+        </Badge>
+      ),
+    },
+    {
+      id: "actions",
+      header: "Aksi",
+      cell: ({ row }) => (
+        <div className="flex justify-end gap-2">
+          <Button variant="ghost" size="icon" onClick={() => openEdit(row.original)}>
+            <Pencil className="h-4 w-4" />
+          </Button>
+          <Button variant="ghost" size="icon" onClick={() => void handleToggle(row.original)}>
+            <Power className="h-4 w-4" />
+          </Button>
+        </div>
+      ),
+    },
+  ]
 
   return (
     <div className="space-y-6">
@@ -65,38 +105,15 @@ export default function DepartmentsPage() {
       </div>
 
       <Card>
-        <CardHeader><CardTitle>Daftar Departemen</CardTitle><CardDescription>Total {departments?.length ?? 0} departemen</CardDescription></CardHeader>
+        <CardHeader>
+          <CardTitle>Daftar Departemen</CardTitle>
+        </CardHeader>
         <CardContent className="p-0">
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>Kode</TableHead>
-                <TableHead>Nama</TableHead>
-                <TableHead>Deskripsi</TableHead>
-                <TableHead>Status</TableHead>
-                <TableHead className="text-right">Aksi</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {isLoading && Array.from({length:4}).map((_,i)=>(
-                <TableRow key={i}>{Array.from({length:5}).map((__,j)=><TableCell key={j}><Skeleton className="h-4 w-full"/></TableCell>)}</TableRow>
-              ))}
-              {!isLoading && (departments ?? []).map((d: { id: string; name: string; code: string; description: string | null; isActive: boolean }) => (
-                <TableRow key={d.id}>
-                  <TableCell className="font-mono font-medium">{d.code}</TableCell>
-                  <TableCell>{d.name}</TableCell>
-                  <TableCell className="text-muted-foreground">{d.description ?? "-"}</TableCell>
-                  <TableCell><Badge variant={d.isActive ? "default" : "secondary"}>{d.isActive ? "Aktif" : "Nonaktif"}</Badge></TableCell>
-                  <TableCell className="text-right">
-                    <div className="flex justify-end gap-2">
-                      <Button variant="ghost" size="icon" onClick={() => openEdit(d)}><Pencil className="h-4 w-4"/></Button>
-                      <Button variant="ghost" size="icon" onClick={() => handleToggle(d)}><Power className="h-4 w-4"/></Button>
-                    </div>
-                  </TableCell>
-                </TableRow>
-              ))}
-            </TableBody>
-          </Table>
+          <DataTable
+            columns={columns}
+            data={(departments ?? []) as DeptRow[]}
+            isLoading={isLoading}
+          />
         </CardContent>
       </Card>
 
@@ -107,12 +124,12 @@ export default function DepartmentsPage() {
             <DialogDescription>Isi data departemen</DialogDescription>
           </DialogHeader>
           <div className="space-y-4">
-            <div><Label>Kode *</Label><Input value={form.code} onChange={e=>setForm(f=>({...f,code:e.target.value}))} placeholder="Contoh: IT"/></div>
-            <div><Label>Nama *</Label><Input value={form.name} onChange={e=>setForm(f=>({...f,name:e.target.value}))} placeholder="Contoh: Information Technology"/></div>
-            <div><Label>Deskripsi</Label><Input value={form.description} onChange={e=>setForm(f=>({...f,description:e.target.value}))} placeholder="Opsional"/></div>
+            <div><Label>Kode *</Label><Input value={form.code} onChange={e => setForm(f => ({ ...f, code: e.target.value }))} placeholder="Contoh: IT" /></div>
+            <div><Label>Nama *</Label><Input value={form.name} onChange={e => setForm(f => ({ ...f, name: e.target.value }))} placeholder="Contoh: Information Technology" /></div>
+            <div><Label>Deskripsi</Label><Input value={form.description} onChange={e => setForm(f => ({ ...f, description: e.target.value }))} placeholder="Opsional" /></div>
           </div>
           <DialogFooter>
-            <Button variant="outline" onClick={()=>setOpen(false)}>Batal</Button>
+            <Button variant="outline" onClick={() => setOpen(false)}>Batal</Button>
             <Button onClick={handleSave} disabled={createMut.isPending || updateMut.isPending}>Simpan</Button>
           </DialogFooter>
         </DialogContent>

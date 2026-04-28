@@ -28,10 +28,10 @@ export function RecentActivityTable() {
   if (isLoading) return <Skeleton className="h-40 w-full" />;
 
   const activities: Array<{
-    id: number;
+    id: string;
     action: string;
     tableName: string;
-    recordId: number | null;
+    recordId: string | null;
     createdAt: string;
     user: { username: string };
   }> = stats?.recentActivity ?? [];

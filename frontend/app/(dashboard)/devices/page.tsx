@@ -1,90 +1,306 @@
-﻿"use client"
+"use client";
 
-import { useState } from "react"
-import Link from "next/link"
-import { Button } from "@/components/ui/button"
-import { Input } from "@/components/ui/input"
+import { useState, useEffect } from "react";
+import type { ColumnDef } from "@tanstack/react-table";
+import Link from "next/link";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from "@/components/ui/select"
+} from "@/components/ui/select";
+import { Badge } from "@/components/ui/badge";
+import { Card } from "@/components/ui/card";
 import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table"
-import { Badge } from "@/components/ui/badge"
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-import { Skeleton } from "@/components/ui/skeleton"
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import { DataTable } from "@/components/ui/data-table";
+import Barcode from "react-barcode";
 import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-} from "@/components/ui/alert-dialog"
-import { Plus, Download, Search, Pencil, Trash2, ChevronLeft, ChevronRight } from "lucide-react"
-import { toast } from "sonner"
-import { useDevices, useDeleteDevice } from "@/hooks/use-devices"
-import { useDepartments, useUnitTypes } from "@/hooks/use-master"
-import { useExportExcel } from "@/hooks/use-import-export"
+  Plus,
+  Download,
+  Search,
+  Pencil,
+  Trash2,
+  ChevronLeft,
+  ChevronRight,
+  X,
+  QrCode,
+} from "lucide-react";
+import { useDevices, useDeleteDevice } from "@/hooks/use-devices";
+import {
+  useDepartments,
+  useUnitTypes,
+  useOperatingSystems,
+  useMicrosoftSoftware,
+} from "@/hooks/use-master";
+import { useExportExcel } from "@/hooks/use-import-export";
+import { useGlobalModal } from "@/lib/global-modal";
 
-const PAGE_SIZE = 20
+const PAGE_SIZE = 20;
+const FILE_BASE_URL = (
+  process.env.NEXT_PUBLIC_API_URL || "http://localhost:3001/api"
+).replace(/\/api\/?$/, "");
+
+type DeviceRow = {
+  id: string;
+  serialNumber: string;
+  userName: string | null;
+  department: { code: string } | null;
+  unitType: { name: string } | null;
+  operatingSystem: { version: string; licenseType: string } | null;
+  office: { version: string; licenseType: string } | null;
+  visio: { version: string } | null;
+  project: { version: string } | null;
+  access: { version: string } | null;
+  serialNumberProofPath?: string | null;
+  operatingSystemProofPath?: string | null;
+  officeProofPath?: string | null;
+  visioProofPath?: string | null;
+  projectProofPath?: string | null;
+  accessProofPath?: string | null;
+};
+
+function buildPages(current: number, total: number): (number | "...")[] {
+  if (total <= 7) return Array.from({ length: total }, (_, i) => i + 1);
+  if (current <= 4) return [1, 2, 3, 4, 5, "...", total];
+  if (current >= total - 3)
+    return [1, "...", total - 4, total - 3, total - 2, total - 1, total];
+  return [1, "...", current - 1, current, current + 1, "...", total];
+}
 
 export default function DevicesPage() {
-  const [search, setSearch] = useState("")
-  const [deptFilter, setDeptFilter] = useState("all")
-  const [unitFilter, setUnitFilter] = useState("all")
-  const [page, setPage] = useState(1)
-  const [deleteId, setDeleteId] = useState<string | null>(null)
+  const [search, setSearch] = useState("");
+  const [deptFilter, setDeptFilter] = useState("all");
+  const [unitFilter, setUnitFilter] = useState("all");
+  const [osFilter, setOsFilter] = useState("all");
+  const [officeFilter, setOfficeFilter] = useState("all");
+  const [page, setPage] = useState(1);
+  const [preview, setPreview] = useState<{ title: string; path: string } | null>(null);
+  const [previewText, setPreviewText] = useState<string | null>(null);
+  const modal = useGlobalModal();
+
+  useEffect(() => {
+    if (!preview || /\.(png|jpg|jpeg|gif|webp)$/i.test(preview.path)) {
+      setPreviewText(null);
+      return;
+    }
+    fetch(`${FILE_BASE_URL}${preview.path}`)
+      .then((r) => r.text())
+      .then(setPreviewText)
+      .catch(() => setPreviewText("Gagal memuat konten file."));
+  }, [preview]);
+
+  const resetFilters = () => {
+    setSearch("");
+    setDeptFilter("all");
+    setUnitFilter("all");
+    setOsFilter("all");
+    setOfficeFilter("all");
+    setPage(1);
+  };
+
+  const isAnyFilter =
+    search !== "" ||
+    deptFilter !== "all" ||
+    unitFilter !== "all" ||
+    osFilter !== "all" ||
+    officeFilter !== "all";
 
   const filters = {
     search: search || undefined,
     departmentId: deptFilter !== "all" ? deptFilter : undefined,
     unitTypeId: unitFilter !== "all" ? unitFilter : undefined,
+    operatingSystemId: osFilter !== "all" ? osFilter : undefined,
+    officeId: officeFilter !== "all" ? officeFilter : undefined,
     page,
     limit: PAGE_SIZE,
-  }
+  };
 
-  const { data, isLoading } = useDevices(filters)
-  const { data: departments } = useDepartments()
-  const { data: unitTypes } = useUnitTypes()
-  const deleteMutation = useDeleteDevice()
-  const exportMutation = useExportExcel()
+  const { data, isLoading } = useDevices(filters);
+  const { data: departments } = useDepartments();
+  const { data: unitTypes } = useUnitTypes();
+  const { data: osList } = useOperatingSystems();
+  const { data: officeList } = useMicrosoftSoftware("OFFICE");
+  const deleteMutation = useDeleteDevice();
+  const exportMutation = useExportExcel();
 
-  const devices = data?.data ?? []
-  const total = data?.total ?? 0
-  const totalPages = Math.ceil(total / PAGE_SIZE)
+  const devices = data?.data ?? [];
+  const total = data?.total ?? 0;
+  const totalPages = Math.ceil(total / PAGE_SIZE);
 
-  const handleDelete = async () => {
-    if (deleteId == null) return
+  const resetPage = () => setPage(1);
+
+  const handleDelete = async (id: string) => {
+    const ok = await modal.confirm({
+      title: "Hapus Perangkat?",
+      description: "Tindakan ini tidak dapat dibatalkan.",
+      confirmText: "Hapus",
+    });
+    if (!ok) return;
     try {
-      await deleteMutation.mutateAsync(deleteId)
-      toast.success("Device berhasil dihapus")
-      setDeleteId(null)
+      await deleteMutation.mutateAsync(id);
+      modal.success({ title: "Device berhasil dihapus" });
     } catch {
-      toast.error("Gagal menghapus device")
+      modal.error({ title: "Gagal menghapus device" });
     }
-  }
+  };
 
   const handleExport = () => {
     exportMutation.mutate(undefined, {
-      onSuccess: () => toast.success("File Excel berhasil diunduh"),
-      onError: () => toast.error("Gagal export Excel"),
-    })
-  }
+      onSuccess: () => modal.success({ title: "File Excel berhasil diunduh" }),
+      onError: () => modal.error({ title: "Gagal export Excel" }),
+    });
+  };
+
+  const renderProofText = (label: string, value: string, proofPath?: string | null) => {
+    if (!proofPath) return <span>{value}</span>;
+    return (
+      <button
+        type="button"
+        className="text-left underline underline-offset-2 hover:text-primary"
+        onClick={() => setPreview({ title: label, path: proofPath })}
+      >
+        {value}
+      </button>
+    );
+  };
+
+  const columns: ColumnDef<DeviceRow>[] = [
+    {
+      id: "barcode",
+      header: "Barcode",
+      size: 120,
+      cell: ({ row }) => (
+        <div className="w-[110px]">
+          <Barcode
+            value={row.original.serialNumber || " "}
+            width={0.9}
+            height={30}
+            fontSize={0}
+            margin={0}
+            displayValue={false}
+          />
+        </div>
+      ),
+    },
+    {
+      accessorKey: "serialNumber",
+      header: "Serial No",
+      cell: ({ row }) => (
+        <div className="flex items-center gap-1.5">
+          <Button variant="ghost" size="icon" className="h-7 w-7 shrink-0 text-muted-foreground hover:text-primary" asChild>
+            <Link href={`/devices/${row.original.id}/barcode`}>
+              <QrCode className="h-4 w-4" />
+            </Link>
+          </Button>
+          <span className="font-medium">
+            {renderProofText(
+              "Bukti Serial Number",
+              row.original.serialNumber,
+              row.original.serialNumberProofPath,
+            )}
+          </span>
+        </div>
+      ),
+    },
+    {
+      accessorKey: "userName",
+      header: "User",
+      cell: ({ row }) => row.original.userName ?? "-",
+    },
+    {
+      id: "dept",
+      header: "Dept",
+      cell: ({ row }) => (
+        <Badge variant="outline">{row.original.department?.code ?? "-"}</Badge>
+      ),
+    },
+    {
+      id: "type",
+      header: "Type",
+      cell: ({ row }) => (
+        <Badge variant={row.original.unitType?.name === "NB" ? "default" : "secondary"}>
+          {row.original.unitType?.name ?? "-"}
+        </Badge>
+      ),
+    },
+    {
+      id: "os",
+      header: "OS",
+      cell: ({ row }) => {
+        const text = row.original.operatingSystem
+          ? `Win ${row.original.operatingSystem.version} ${row.original.operatingSystem.licenseType}`
+          : "-";
+        return renderProofText("Bukti Operating System", text, row.original.operatingSystemProofPath);
+      },
+    },
+    {
+      id: "office",
+      header: "Office",
+      cell: ({ row }) => {
+        const text = row.original.office
+          ? `Office ${row.original.office.version} ${row.original.office.licenseType}`
+          : "-";
+        return renderProofText("Bukti Microsoft Office", text, row.original.officeProofPath);
+      },
+    },
+    {
+      id: "visio",
+      header: "Visio",
+      cell: ({ row }) => {
+        const text = row.original.visio ? `Visio ${row.original.visio.version}` : "-";
+        return renderProofText("Bukti Microsoft Visio", text, row.original.visioProofPath);
+      },
+    },
+    {
+      id: "project",
+      header: "Project",
+      cell: ({ row }) => {
+        const text = row.original.project ? `Project ${row.original.project.version}` : "-";
+        return renderProofText("Bukti Microsoft Project", text, row.original.projectProofPath);
+      },
+    },
+    {
+      id: "access",
+      header: "Access",
+      cell: ({ row }) => {
+        const text = row.original.access ? `Access ${row.original.access.version}` : "-";
+        return renderProofText("Bukti Microsoft Access", text, row.original.accessProofPath);
+      },
+    },
+    {
+      id: "actions",
+      header: "Aksi",
+      cell: ({ row }) => (
+        <div className="flex justify-end gap-2">
+          <Button variant="ghost" size="icon" asChild>
+            <Link href={`/devices/${row.original.id}`}>
+              <Pencil className="h-4 w-4" />
+            </Link>
+          </Button>
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={() => void handleDelete(row.original.id)}
+          >
+            <Trash2 className="h-4 w-4 text-destructive" />
+          </Button>
+        </div>
+      ),
+    },
+  ];
 
   return (
     <div className="space-y-6">
+      {/* Page header */}
       <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
         <div>
           <h1 className="text-2xl font-bold tracking-tight">Perangkat IT</h1>
@@ -104,171 +320,201 @@ export default function DevicesPage() {
         </div>
       </div>
 
+      {/* Unified table card */}
       <Card>
-        <CardHeader>
-          <CardTitle>Filter & Pencarian</CardTitle>
-          <CardDescription>Cari dan filter data perangkat</CardDescription>
-        </CardHeader>
-        <CardContent>
-          <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-            <div className="lg:col-span-2">
-              <div className="relative">
-                <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
-                <Input
-                  placeholder="Cari serial number atau nama user..."
-                  className="pl-8"
-                  value={search}
-                  onChange={(e) => { setSearch(e.target.value); setPage(1) }}
-                />
-              </div>
+        {/* Filter toolbar */}
+        <div className="border-b bg-muted/20 px-4 py-3">
+          <div className="flex flex-wrap items-center gap-3">
+            {/* Search — kiri, match DataTable search style */}
+            <div className="relative w-full max-w-xs">
+              <Search className="pointer-events-none absolute left-2.5 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+              <Input
+                placeholder="Cari serial number atau nama user..."
+                className="h-9 pl-8 text-sm"
+                value={search}
+                onChange={(e) => { setSearch(e.target.value); resetPage(); }}
+              />
             </div>
-            <Select value={deptFilter} onValueChange={(v) => { setDeptFilter(v); setPage(1) }}>
-              <SelectTrigger>
-                <SelectValue placeholder="Departemen" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">Semua Departemen</SelectItem>
-                {(departments ?? []).map((d: { id: string; name: string }) => (
-                  <SelectItem key={d.id} value={String(d.id)}>{d.name}</SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-            <Select value={unitFilter} onValueChange={(v) => { setUnitFilter(v); setPage(1) }}>
-              <SelectTrigger>
-                <SelectValue placeholder="Unit Type" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">Semua Type</SelectItem>
-                {(unitTypes ?? []).map((u: { id: string; name: string }) => (
-                  <SelectItem key={u.id} value={String(u.id)}>{u.name}</SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
-        </CardContent>
-      </Card>
 
-      <Card>
-        <CardContent className="p-0">
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>Serial No</TableHead>
-                <TableHead>User</TableHead>
-                <TableHead>Dept</TableHead>
-                <TableHead>Type</TableHead>
-                <TableHead>OS</TableHead>
-                <TableHead>Office</TableHead>
-                <TableHead>Visio</TableHead>
-                <TableHead>Project</TableHead>
-                <TableHead>Access</TableHead>
-                <TableHead className="text-right">Aksi</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {isLoading && Array.from({ length: 5 }).map((_, i) => (
-                <TableRow key={i}>
-                  {Array.from({ length: 10 }).map((__, j) => (
-                    <TableCell key={j}><Skeleton className="h-4 w-full" /></TableCell>
+            {/* Select boxes + reset — kanan */}
+            <div className="ml-auto flex flex-wrap items-center gap-2">
+              {/* Department */}
+              <Select value={deptFilter} onValueChange={(v) => { setDeptFilter(v); resetPage(); }}>
+                <SelectTrigger className="h-9 w-[170px] text-sm">
+                  <SelectValue placeholder="Departemen" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">Semua Departemen</SelectItem>
+                  {(departments ?? []).map((d: { id: string; code: string; name: string }) => (
+                    <SelectItem key={d.id} value={d.id}>
+                      {d.name} ({d.code})
+                    </SelectItem>
                   ))}
-                </TableRow>
-              ))}
-              {!isLoading && devices.length === 0 && (
-                <TableRow>
-                  <TableCell colSpan={10} className="text-center py-8 text-muted-foreground">
-                    Tidak ada data perangkat
-                  </TableCell>
-                </TableRow>
+                </SelectContent>
+              </Select>
+
+              {/* OS */}
+              <Select value={osFilter} onValueChange={(v) => { setOsFilter(v); resetPage(); }}>
+                <SelectTrigger className="h-9 w-[180px] text-sm">
+                  <SelectValue placeholder="Operating System" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">Semua OS</SelectItem>
+                  {(osList ?? []).map((o: { id: string; version: string; licenseType: string }) => (
+                    <SelectItem key={o.id} value={o.id}>
+                      Windows {o.version} ({o.licenseType})
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+
+              {/* Microsoft Office */}
+              <Select value={officeFilter} onValueChange={(v) => { setOfficeFilter(v); resetPage(); }}>
+                <SelectTrigger className="h-9 w-[170px] text-sm">
+                  <SelectValue placeholder="Microsoft Office" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">Semua Office</SelectItem>
+                  {(officeList ?? []).map((o: { id: string; version: string; licenseType: string }) => (
+                    <SelectItem key={o.id} value={o.id}>
+                      Office {o.version} ({o.licenseType})
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+
+              {/* Reset filter */}
+              {isAnyFilter && (
+                <Button variant="ghost" size="sm" onClick={resetFilters} className="h-9 text-muted-foreground hover:text-foreground">
+                  <X className="mr-1 h-3.5 w-3.5" />
+                  Reset
+                </Button>
               )}
-              {!isLoading && devices.map((device: {
-                id: string
-                serialNo: string
-                userFullName: string | null
-                department: { code: string } | null
-                unitType: { name: string } | null
-                operatingSystem: { version: string; licenseType: string } | null
-                office: { version: string; licenseType: string } | null
-                visio: { version: string } | null
-                project: { version: string } | null
-                access: { version: string } | null
-              }) => (
-                <TableRow key={device.id}>
-                  <TableCell className="font-medium">{device.serialNo}</TableCell>
-                  <TableCell>{device.userFullName ?? "-"}</TableCell>
-                  <TableCell>
-                    <Badge variant="outline">{device.department?.code ?? "-"}</Badge>
-                  </TableCell>
-                  <TableCell>
-                    <Badge variant={device.unitType?.name === "NB" ? "default" : "secondary"}>
-                      {device.unitType?.name ?? "-"}
-                    </Badge>
-                  </TableCell>
-                  <TableCell className="text-sm">
-                    {device.operatingSystem ? `Win ${device.operatingSystem.version} ${device.operatingSystem.licenseType}` : "-"}
-                  </TableCell>
-                  <TableCell className="text-sm">
-                    {device.office ? `Office ${device.office.version} ${device.office.licenseType}` : "-"}
-                  </TableCell>
-                  <TableCell className="text-sm text-muted-foreground">
-                    {device.visio ? `Visio ${device.visio.version}` : "-"}
-                  </TableCell>
-                  <TableCell className="text-sm text-muted-foreground">
-                    {device.project ? `Project ${device.project.version}` : "-"}
-                  </TableCell>
-                  <TableCell className="text-sm text-muted-foreground">
-                    {device.access ? `Access ${device.access.version}` : "-"}
-                  </TableCell>
-                  <TableCell className="text-right">
-                    <div className="flex justify-end gap-2">
-                      <Button variant="ghost" size="icon" asChild>
-                        <Link href={`/devices/${device.id}`}>
-                          <Pencil className="h-4 w-4" />
-                        </Link>
-                      </Button>
-                      <Button variant="ghost" size="icon" onClick={() => setDeleteId(device.id)}>
-                        <Trash2 className="h-4 w-4 text-destructive" />
-                      </Button>
-                    </div>
-                  </TableCell>
-                </TableRow>
-              ))}
-            </TableBody>
-          </Table>
-        </CardContent>
+            </div>
+          </div>
+        </div>
+
+        {/* Table */}
+        <DataTable
+          columns={columns}
+          data={devices as DeviceRow[]}
+          isLoading={isLoading}
+          searchable={false}
+          paginated={false}
+        />
+
+        {/* Server-side pagination footer */}
+        {!isLoading && total > 0 && (
+          <div className="flex flex-wrap items-center justify-between gap-3 border-t bg-muted/30 px-4 py-3">
+            <span className="text-xs font-medium text-muted-foreground">
+              <strong className="text-primary">{(page - 1) * PAGE_SIZE + 1}–{Math.min(page * PAGE_SIZE, total)}</strong>
+              {" "}dari{" "}
+              <strong className="text-primary">{total}</strong>
+              {" "}perangkat
+            </span>
+            {totalPages > 1 && (
+              <div className="flex items-center gap-1">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="h-8 rounded-full px-3 text-xs font-bold border-primary text-primary hover:bg-primary hover:text-primary-foreground disabled:border-border disabled:text-muted-foreground disabled:opacity-40"
+                  onClick={() => setPage(1)}
+                  disabled={page <= 1}
+                >
+                  First
+                </Button>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="h-8 rounded-full px-3 text-xs font-bold hover:border-primary hover:text-primary disabled:opacity-40"
+                  onClick={() => setPage((p) => p - 1)}
+                  disabled={page <= 1}
+                >
+                  <ChevronLeft className="mr-0.5 h-3 w-3" />Prev
+                </Button>
+
+                {buildPages(page, totalPages).map((p, i) =>
+                  p === "..." ? (
+                    <span
+                      key={`el-${i}`}
+                      className="flex h-8 w-8 items-center justify-center text-xs text-muted-foreground"
+                    >
+                      …
+                    </span>
+                  ) : (
+                    <Button
+                      key={p}
+                      variant={p === page ? "default" : "outline"}
+                      size="sm"
+                      className={`h-8 w-8 rounded-full p-0 text-xs font-semibold ${
+                        p === page ? "shadow-md" : "hover:border-primary hover:text-primary"
+                      }`}
+                      onClick={() => setPage(p as number)}
+                    >
+                      {p}
+                    </Button>
+                  ),
+                )}
+
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="h-8 rounded-full px-3 text-xs font-bold hover:border-primary hover:text-primary disabled:opacity-40"
+                  onClick={() => setPage((p) => p + 1)}
+                  disabled={page >= totalPages}
+                >
+                  Next<ChevronRight className="ml-0.5 h-3 w-3" />
+                </Button>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="h-8 rounded-full px-3 text-xs font-bold border-primary text-primary hover:bg-primary hover:text-primary-foreground disabled:border-border disabled:text-muted-foreground disabled:opacity-40"
+                  onClick={() => setPage(totalPages)}
+                  disabled={page >= totalPages}
+                >
+                  Last
+                </Button>
+              </div>
+            )}
+          </div>
+        )}
       </Card>
 
-      <div className="flex items-center justify-between">
-        <p className="text-sm text-muted-foreground">
-          Menampilkan {devices.length} dari {total} perangkat
-        </p>
-        <div className="flex gap-2">
-          <Button variant="outline" size="sm" disabled={page <= 1} onClick={() => setPage(p => p - 1)}>
-            <ChevronLeft className="h-4 w-4" />
-            Sebelumnya
-          </Button>
-          <Button variant="outline" size="sm" disabled={page >= totalPages} onClick={() => setPage(p => p + 1)}>
-            Selanjutnya
-            <ChevronRight className="h-4 w-4" />
-          </Button>
-        </div>
-      </div>
+      {/* File preview dialog */}
+      <Dialog open={!!preview} onOpenChange={(o) => !o && setPreview(null)}>
+        <DialogContent className="max-w-3xl max-h-[90vh] flex flex-col overflow-hidden">
+          <DialogHeader>
+            <DialogTitle>{preview?.title}</DialogTitle>
+            <DialogDescription>Preview bukti file yang di-upload</DialogDescription>
+          </DialogHeader>
+          {preview && (
+            <div className="flex min-h-0 flex-1 flex-col gap-3 overflow-hidden">
+              <div className="min-h-0 flex-1 overflow-auto rounded-md border">
+                {/\.(png|jpg|jpeg|gif|webp)$/i.test(preview.path) ? (
+                  <img
+                    src={`${FILE_BASE_URL}${preview.path}`}
+                    alt={preview.title}
+                    className="max-h-full w-auto"
+                  />
+                ) : (
+                  <pre className="h-full w-full bg-muted p-4 text-xs whitespace-pre-wrap break-all">
+                    {previewText ?? "Memuat..."}
+                  </pre>
+                )}
+              </div>
+              <a
+                href={`${FILE_BASE_URL}${preview.path}`}
+                target="_blank"
+                rel="noreferrer"
+                className="shrink-0 text-sm underline underline-offset-2"
+              >
+                Buka file di tab baru
+              </a>
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
 
-      <AlertDialog open={deleteId !== null} onOpenChange={(o) => !o && setDeleteId(null)}>
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>Hapus Perangkat?</AlertDialogTitle>
-            <AlertDialogDescription>
-              Tindakan ini tidak dapat dibatalkan. Perangkat akan dihapus secara permanen.
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel>Batal</AlertDialogCancel>
-            <AlertDialogAction onClick={handleDelete} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
-              Hapus
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
     </div>
-  )
+  );
 }

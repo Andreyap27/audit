@@ -11,7 +11,7 @@ export const useDepartments = () =>
 export const useCreateDepartment = () => {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: (data: { code: string; name: string }) =>
+    mutationFn: (data: { code: string; name: string; description?: string }) =>
       api.post("/departments", data).then((r) => r.data),
     onSuccess: () => qc.invalidateQueries({ queryKey: ["departments"] }),
   });
@@ -27,6 +27,7 @@ export const useUpdateDepartment = () => {
       id: string;
       code?: string;
       name?: string;
+      description?: string;
       isActive?: boolean;
     }) => api.put(`/departments/${id}`, data).then((r) => r.data),
     onSuccess: () => qc.invalidateQueries({ queryKey: ["departments"] }),

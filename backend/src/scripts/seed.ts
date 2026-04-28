@@ -23,12 +23,12 @@ async function seed() {
   await prisma.unitType.upsert({
     where: { code: "NB" },
     create: { code: "NB", name: "Notebook" },
-    update: {},
+    update: { name: "Notebook" },
   });
   await prisma.unitType.upsert({
     where: { code: "WS" },
     create: { code: "WS", name: "Workstation" },
-    update: {},
+    update: { name: "Workstation" },
   });
   console.log("✅ Unit types seeded");
 

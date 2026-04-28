@@ -56,3 +56,39 @@ export const useDeleteDevice = () => {
     onSuccess: () => qc.invalidateQueries({ queryKey: ["devices"] }),
   });
 };
+
+export const useUploadEvidence = () => {
+  return useMutation({
+    mutationFn: ({ file, serialNumber }: { file: File; serialNumber?: string }) => {
+      const fd = new FormData();
+      fd.append("file", file);
+      const params = serialNumber ? { serialNumber } : {};
+      return api
+        .post("/uploads/evidence", fd, {
+          headers: { "Content-Type": "multipart/form-data" },
+          params,
+        })
+        .then((r) => r.data);
+    },
+  });
+};
+
+export const useReassignDevice = (id: string) => {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (data: Record<string, unknown>) =>
+      api.post(`/devices/${id}/reassign`, data).then((r) => r.data),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["devices"] });
+      qc.invalidateQueries({ queryKey: ["devices", id] });
+      qc.invalidateQueries({ queryKey: ["devices", id, "history"] });
+    },
+  });
+};
+
+export const useDeviceHistory = (id: string) =>
+  useQuery({
+    queryKey: ["devices", id, "history"],
+    queryFn: () => api.get(`/devices/${id}/history`).then((r) => r.data),
+    enabled: !!id,
+  });

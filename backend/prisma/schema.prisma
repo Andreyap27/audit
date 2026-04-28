@@ -27,10 +27,11 @@ enum Role {
 }
 
 model Department {
-  id       String  @id @default(uuid())
-  code     String  @unique
-  name     String
-  isActive Boolean @default(true)
+  id          String  @id @default(uuid())
+  code        String  @unique
+  name        String
+  description String?
+  isActive    Boolean @default(true)
 
   devices Device[]
 }
@@ -104,9 +105,49 @@ model Device {
   accessId String?
 
   notes     String?
+  serialNumberProofPath    String?
+  operatingSystemProofPath String?
+  officeProofPath          String?
+  visioProofPath           String?
+  projectProofPath         String?
+  accessProofPath          String?
   isActive  Boolean  @default(true)
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+
+  assignmentHistories DeviceAssignmentHistory[]
+}
+
+model DeviceAssignmentHistory {
+  id       String @id @default(uuid())
+  deviceId String
+  device   Device @relation(fields: [deviceId], references: [id])
+
+  userName String?
+
+  departmentCode String?
+  departmentName String?
+
+  unitTypeCode String?
+  unitTypeName String?
+
+  operatingSystemLabel String?
+  officeLabel          String?
+  visioLabel           String?
+  projectLabel         String?
+  accessLabel          String?
+
+  serialNumberProofPath    String?
+  operatingSystemProofPath String?
+  officeProofPath          String?
+  visioProofPath           String?
+  projectProofPath         String?
+  accessProofPath          String?
+
+  reassignmentNote String?
+  assignedAt       DateTime @default(now())
+  endedAt          DateTime?
+  createdAt        DateTime @default(now())
 }
 
 model AuditLog {

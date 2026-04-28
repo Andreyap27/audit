@@ -142,27 +142,44 @@ export const getSoftwareReport = async (
   type: "OFFICE" | "VISIO" | "PROJECT" | "ACCESS" | "OS",
 ) => {
   if (type === "OS") {
-    return prisma.operatingSystem.findMany({
+    const rows = await prisma.operatingSystem.findMany({
       where: { isActive: true },
       include: { _count: { select: { devices: true } } },
       orderBy: [{ version: "desc" }, { licenseType: "asc" }],
     });
+    const total = rows.reduce((s, r) => s + r._count.devices, 0);
+    return rows.map((r) => ({
+      id: r.id,
+      name: r.name,
+      version: r.version,
+      licenseType: r.licenseType,
+      count: r._count.devices,
+      percentage: total > 0 ? (r._count.devices / total) * 100 : 0,
+    }));
   }
 
   const typeMap = {
-    OFFICE: { rel: "officeDevices" as const, field: "officeId" },
-    VISIO: { rel: "visioDevices" as const, field: "visioId" },
-    PROJECT: { rel: "projectDevices" as const, field: "projectId" },
-    ACCESS: { rel: "accessDevices" as const, field: "accessId" },
+    OFFICE: { rel: "officeDevices" as const },
+    VISIO: { rel: "visioDevices" as const },
+    PROJECT: { rel: "projectDevices" as const },
+    ACCESS: { rel: "accessDevices" as const },
   };
 
   const { rel } = typeMap[type];
 
-  return prisma.microsoftSoftware.findMany({
+  const rows = await prisma.microsoftSoftware.findMany({
     where: { type, isActive: true },
     include: { _count: { select: { [rel]: true } } },
     orderBy: [{ version: "desc" }, { licenseType: "asc" }],
   });
+  const total = rows.reduce((s, r) => s + (r._count as Record<string, number>)[rel], 0);
+  return rows.map((r) => ({
+    id: r.id,
+    version: r.version,
+    licenseType: r.licenseType,
+    count: (r._count as Record<string, number>)[rel],
+    percentage: total > 0 ? ((r._count as Record<string, number>)[rel] / total) * 100 : 0,
+  }));
 };
 
 export const getAuditLog = async (params: {

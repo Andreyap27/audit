@@ -1,19 +1,20 @@
-﻿"use client"
+"use client"
 
 import { useState } from "react"
+import type { ColumnDef } from "@tanstack/react-table"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
+import { DataTable } from "@/components/ui/data-table"
 import { Badge } from "@/components/ui/badge"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog"
 import { Label } from "@/components/ui/label"
-import { Skeleton } from "@/components/ui/skeleton"
 import { Plus, Pencil, Trash2 } from "lucide-react"
-import { toast } from "sonner"
 import { useOperatingSystems, useCreateOs, useUpdateOs, useDeleteOs } from "@/hooks/use-master"
+import { useGlobalModal } from "@/lib/global-modal"
 
+type OsRow = { id: string; version: string; licenseType: string }
 type OsForm = { version: string; licenseType: string }
 
 export default function OperatingSystemsPage() {
@@ -21,37 +22,65 @@ export default function OperatingSystemsPage() {
   const createMut = useCreateOs()
   const updateMut = useUpdateOs()
   const deleteMut = useDeleteOs()
+  const modal = useGlobalModal()
 
   const [open, setOpen] = useState(false)
   const [editId, setEditId] = useState<string | null>(null)
   const [form, setForm] = useState<OsForm>({ version: "", licenseType: "OEM" })
 
   const openAdd = () => { setEditId(null); setForm({ version: "", licenseType: "OEM" }); setOpen(true) }
-  const openEdit = (o: { id: string; version: string; licenseType: string }) => {
-    setEditId(o.id); setForm({ version: o.version, licenseType: o.licenseType }); setOpen(true)
-  }
+  const openEdit = (o: OsRow) => { setEditId(o.id); setForm({ version: o.version, licenseType: o.licenseType }); setOpen(true) }
 
   const handleSave = async () => {
-    if (!form.version) { toast.error("Versi wajib diisi"); return }
+    if (!form.version) { modal.error({ title: "Versi wajib diisi" }); return }
+    const name = `Windows ${form.version} ${form.licenseType}`
     try {
       if (editId) {
-        await updateMut.mutateAsync({ id: editId, data: form })
-        toast.success("OS berhasil diperbarui")
+        await updateMut.mutateAsync({ id: editId, name, ...form })
+        modal.success({ title: "OS berhasil diperbarui" })
       } else {
-        await createMut.mutateAsync(form)
-        toast.success("OS berhasil ditambahkan")
+        await createMut.mutateAsync({ name, ...form })
+        modal.success({ title: "OS berhasil ditambahkan" })
       }
       setOpen(false)
-    } catch { toast.error("Gagal menyimpan OS") }
+    } catch { modal.error({ title: "Gagal menyimpan OS" }) }
   }
 
   const handleDelete = async (id: string) => {
-    if (!confirm("Hapus OS ini?")) return
+    const ok = await modal.confirm({ title: "Hapus OS ini?", confirmText: "Hapus" })
+    if (!ok) return
     try {
       await deleteMut.mutateAsync(id)
-      toast.success("OS berhasil dihapus")
-    } catch { toast.error("Gagal menghapus OS") }
+      modal.success({ title: "OS berhasil dihapus" })
+    } catch { modal.error({ title: "Gagal menghapus OS" }) }
   }
+
+  const columns: ColumnDef<OsRow>[] = [
+    {
+      accessorKey: "version",
+      header: "Versi",
+      cell: ({ row }) => <span>Windows {row.original.version}</span>,
+    },
+    {
+      accessorKey: "licenseType",
+      header: "Tipe Lisensi",
+      cell: ({ row }) => <Badge variant="outline">{row.original.licenseType}</Badge>,
+    },
+    {
+      id: "actions",
+      header: "Aksi",
+      cell: ({ row }) => (
+        <div className="flex justify-end gap-2">
+          <Button variant="ghost" size="icon" onClick={() => openEdit(row.original)}>
+            <Pencil className="h-4 w-4" />
+          </Button>
+          <Button variant="ghost" size="icon" onClick={() => void handleDelete(row.original.id)}>
+            <Trash2 className="h-4 w-4 text-destructive" />
+          </Button>
+        </div>
+      ),
+    },
+  ]
 
   return (
     <div className="space-y-6">
@@ -64,34 +93,15 @@ export default function OperatingSystemsPage() {
       </div>
 
       <Card>
-        <CardHeader><CardTitle>Daftar OS</CardTitle><CardDescription>Total {osList?.length ?? 0} entri</CardDescription></CardHeader>
+        <CardHeader>
+          <CardTitle>Daftar OS</CardTitle>
+        </CardHeader>
         <CardContent className="p-0">
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>Versi</TableHead>
-                <TableHead>Tipe Lisensi</TableHead>
-                <TableHead className="text-right">Aksi</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {isLoading && Array.from({length:4}).map((_,i)=>(
-                <TableRow key={i}>{Array.from({length:3}).map((__,j)=><TableCell key={j}><Skeleton className="h-4 w-full"/></TableCell>)}</TableRow>
-              ))}
-              {!isLoading && (osList ?? []).map((o: { id: string; version: string; licenseType: string }) => (
-                <TableRow key={o.id}>
-                  <TableCell>Windows {o.version}</TableCell>
-                  <TableCell><Badge variant="outline">{o.licenseType}</Badge></TableCell>
-                  <TableCell className="text-right">
-                    <div className="flex justify-end gap-2">
-                      <Button variant="ghost" size="icon" onClick={() => openEdit(o)}><Pencil className="h-4 w-4"/></Button>
-                      <Button variant="ghost" size="icon" onClick={() => handleDelete(o.id)}><Trash2 className="h-4 w-4 text-destructive"/></Button>
-                    </div>
-                  </TableCell>
-                </TableRow>
-              ))}
-            </TableBody>
-          </Table>
+          <DataTable
+            columns={columns}
+            data={(osList ?? []) as OsRow[]}
+            isLoading={isLoading}
+          />
         </CardContent>
       </Card>
 
@@ -102,10 +112,13 @@ export default function OperatingSystemsPage() {
             <DialogDescription>Isi data sistem operasi</DialogDescription>
           </DialogHeader>
           <div className="space-y-4">
-            <div><Label>Versi *</Label><Input value={form.version} onChange={e=>setForm(f=>({...f,version:e.target.value}))} placeholder="Contoh: 11 Pro"/></div>
+            <div>
+              <Label>Versi *</Label>
+              <Input value={form.version} onChange={e => setForm(f => ({ ...f, version: e.target.value }))} placeholder="Contoh: 11 Pro" />
+            </div>
             <div>
               <Label>Tipe Lisensi</Label>
-              <Select value={form.licenseType} onValueChange={v=>setForm(f=>({...f,licenseType:v}))}>
+              <Select value={form.licenseType} onValueChange={v => setForm(f => ({ ...f, licenseType: v }))}>
                 <SelectTrigger><SelectValue /></SelectTrigger>
                 <SelectContent>
                   <SelectItem value="OEM">OEM</SelectItem>
@@ -116,7 +129,7 @@ export default function OperatingSystemsPage() {
             </div>
           </div>
           <DialogFooter>
-            <Button variant="outline" onClick={()=>setOpen(false)}>Batal</Button>
+            <Button variant="outline" onClick={() => setOpen(false)}>Batal</Button>
             <Button onClick={handleSave} disabled={createMut.isPending || updateMut.isPending}>Simpan</Button>
           </DialogFooter>
         </DialogContent>

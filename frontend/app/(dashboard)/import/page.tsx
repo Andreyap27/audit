@@ -27,11 +27,9 @@ export default function ImportPage() {
 
   const handleImport = async () => {
     if (!file) return
-    const fd = new FormData()
-    fd.append("file", file)
     try {
-      const result = await importMut.mutateAsync(fd)
-      toast.success(`Import berhasil: ${result.imported ?? 0} device diproses`)
+      const result = await importMut.mutateAsync(file)
+      toast.success(`Import berhasil: ${result.success ?? 0} device diproses, ${result.failed ?? 0} gagal`)
       setFile(null)
       if (fileInputRef.current) fileInputRef.current.value = ""
     } catch (e: unknown) {
