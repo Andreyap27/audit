@@ -17,6 +17,7 @@ import importRoutes from "./modules/import/import.routes";
 import exportRoutes from "./modules/export/export.routes";
 import usersRoutes from "./modules/users/users.routes";
 import uploadsRoutes from "./modules/uploads/uploads.routes";
+import deviceLoansRoutes from "./modules/device-loans/device-loans.routes";
 import { env } from "./config/env";
 
 const app = express();
@@ -48,6 +49,7 @@ app.use("/api/import", importRoutes);
 app.use("/api/export", exportRoutes);
 app.use("/api/users", usersRoutes);
 app.use("/api/uploads", uploadsRoutes);
+app.use("/api/device-loans", deviceLoansRoutes);
 
 app.get("/api/health", (_req, res) => {
   res.json({ status: "ok", timestamp: new Date().toISOString() });

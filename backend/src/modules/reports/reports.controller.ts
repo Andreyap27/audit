@@ -4,8 +4,9 @@ import { z } from "zod";
 import * as service from "./reports.service";
 
 const auditLogFilterSchema = z.object({
-  action: z.enum(["CREATE", "UPDATE", "DELETE", "IMPORT"]).optional(),
+  action: z.enum(["CREATE", "UPDATE", "DELETE", "IMPORT", "REASSIGN"]).optional(),
   userId: z.string().uuid().optional(),
+  search: z.string().optional(),
   dateFrom: z.string().optional(),
   dateTo: z.string().optional(),
   page: z.coerce.number().int().positive().default(1),
@@ -57,6 +58,54 @@ export const getSoftwareReport = async (
       return;
     }
     res.json(await service.getSoftwareReport(parsed.data.type));
+  } catch (err) {
+    next(err);
+  }
+};
+
+const loanReportFilterSchema = z.object({
+  status: z.enum(["BORROWED", "RETURNED"]).optional(),
+  dateFrom: z.string().optional(),
+  dateTo: z.string().optional(),
+  search: z.string().optional(),
+  page: z.coerce.number().int().positive().default(1),
+  limit: z.coerce.number().int().positive().max(100).default(20),
+});
+
+export const getLoanReport = async (
+  req: AuthRequest,
+  res: Response,
+  next: NextFunction,
+): Promise<void> => {
+  try {
+    const parsed = loanReportFilterSchema.safeParse(req.query);
+    if (!parsed.success) {
+      res.status(400).json({ message: "Validation error" });
+      return;
+    }
+    res.json(await service.getLoanReport(parsed.data));
+  } catch (err) {
+    next(err);
+  }
+};
+
+export const exportLoanReport = async (
+  req: AuthRequest,
+  res: Response,
+  next: NextFunction,
+): Promise<void> => {
+  try {
+    const { status, dateFrom, dateTo } = req.query as Record<string, string>;
+    const buffer = await service.exportLoanReport({ status, dateFrom, dateTo });
+    res.setHeader(
+      "Content-Type",
+      "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+    );
+    res.setHeader(
+      "Content-Disposition",
+      `attachment; filename="laporan-peminjaman-${Date.now()}.xlsx"`,
+    );
+    res.send(buffer);
   } catch (err) {
     next(err);
   }

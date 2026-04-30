@@ -147,9 +147,6 @@ export default function UnitTypesPage() {
       </div>
 
       <Card>
-        <CardHeader>
-          <CardTitle>Daftar Tipe Unit</CardTitle>
-        </CardHeader>
         <CardContent className="p-0">
           <DataTable
             columns={columns}

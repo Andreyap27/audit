@@ -1,134 +1,315 @@
-"use client"
+"use client";
 
-import { useState } from "react"
-import type { ColumnDef } from "@tanstack/react-table"
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-import { DataTable } from "@/components/ui/data-table"
-import { Badge } from "@/components/ui/badge"
-import { Button } from "@/components/ui/button"
-import { Input } from "@/components/ui/input"
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { ChevronLeft, ChevronRight, Search } from "lucide-react"
-import { useAuditLog } from "@/hooks/use-reports"
+import { useState } from "react";
+import type { ColumnDef } from "@tanstack/react-table";
+import { Card } from "@/components/ui/card";
+import { DataTable } from "@/components/ui/data-table";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import {
+  ChevronLeft,
+  ChevronRight,
+  Search,
+  X,
+} from "lucide-react";
+import { useAuditLog } from "@/hooks/use-reports";
+import { format } from "date-fns";
+import { id as idLocale } from "date-fns/locale";
 
-const actionColors: Record<string, "default" | "secondary" | "destructive" | "outline"> = {
+const PAGE_SIZE = 20;
+
+const ACTION_COLORS: Record<string, "default" | "secondary" | "destructive" | "outline"> = {
   CREATE: "default",
   UPDATE: "secondary",
   DELETE: "destructive",
+  REASSIGN: "outline",
   IMPORT: "outline",
-}
+};
+
+const ACTION_LABELS: Record<string, string> = {
+  CREATE: "Tambah",
+  UPDATE: "Ubah",
+  DELETE: "Hapus",
+  REASSIGN: "Alih User",
+  IMPORT: "Import",
+};
 
 type LogRow = {
-  id: string
-  action: string
-  tableName: string
-  recordId: string | null
-  createdAt: string
-  user: { username: string } | null
+  id: string;
+  action: string;
+  tableName: string;
+  recordId: string | null;
+  createdAt: string;
+  user: { username: string } | null;
+};
+
+function buildPages(current: number, total: number): (number | "...")[] {
+  if (total <= 7) return Array.from({ length: total }, (_, i) => i + 1);
+  if (current <= 4) return [1, 2, 3, 4, 5, "...", total];
+  if (current >= total - 3)
+    return [1, "...", total - 4, total - 3, total - 2, total - 1, total];
+  return [1, "...", current - 1, current, current + 1, "...", total];
 }
 
 export default function AuditLogPage() {
-  const [page, setPage] = useState(1)
-  const [search, setSearch] = useState("")
-  const [action, setAction] = useState("ALL")
+  const [page, setPage] = useState(1);
+  const [search, setSearch] = useState("");
+  const [action, setAction] = useState("all");
+  const [dateFrom, setDateFrom] = useState("");
+  const [dateTo, setDateTo] = useState("");
+
+  const resetPage = () => setPage(1);
+  const isAnyFilter =
+    search !== "" || action !== "all" || dateFrom !== "" || dateTo !== "";
+
+  const resetFilters = () => {
+    setSearch("");
+    setAction("all");
+    setDateFrom("");
+    setDateTo("");
+    resetPage();
+  };
 
   const { data, isLoading } = useAuditLog({
     page,
-    limit: 20,
-    action: action !== "ALL" ? action : undefined,
+    limit: PAGE_SIZE,
     search: search || undefined,
-  })
+    action: action !== "all" ? action : undefined,
+    dateFrom: dateFrom || undefined,
+    dateTo: dateTo || undefined,
+  });
 
-  const logs: LogRow[] = data?.data ?? []
-  const total = data?.total ?? 0
-  const totalPages = Math.ceil(total / 20)
+  const logs: LogRow[] = data?.data ?? [];
+  const total = data?.total ?? 0;
+  const totalPages = Math.ceil(total / PAGE_SIZE);
 
   const columns: ColumnDef<LogRow>[] = [
     {
       accessorKey: "action",
       header: "Aksi",
       cell: ({ row }) => (
-        <Badge variant={actionColors[row.original.action] ?? "outline"}>{row.original.action}</Badge>
+        <Badge
+          variant={ACTION_COLORS[row.original.action] ?? "outline"}
+          className={
+            row.original.action === "REASSIGN"
+              ? "border-violet-400 bg-violet-50 text-violet-700 dark:bg-violet-950/30"
+              : row.original.action === "IMPORT"
+                ? "border-sky-400 bg-sky-50 text-sky-700 dark:bg-sky-950/30"
+                : ""
+          }
+        >
+          {ACTION_LABELS[row.original.action] ?? row.original.action}
+        </Badge>
       ),
     },
-    { accessorKey: "tableName", header: "Tabel" },
+    {
+      accessorKey: "tableName",
+      header: "Tabel",
+      cell: ({ row }) => (
+        <span className="font-mono text-xs">{row.original.tableName}</span>
+      ),
+    },
     {
       accessorKey: "recordId",
       header: "Record ID",
-      cell: ({ row }) => <span className="font-mono text-xs">{row.original.recordId ?? "-"}</span>,
+      cell: ({ row }) => (
+        <span className="font-mono text-xs text-muted-foreground">
+          {row.original.recordId
+            ? row.original.recordId.slice(0, 8) + "…"
+            : "-"}
+        </span>
+      ),
     },
     {
       id: "user",
       header: "User",
-      cell: ({ row }) => row.original.user?.username ?? "system",
+      cell: ({ row }) => (
+        <span className="font-medium">
+          {row.original.user?.username ?? "system"}
+        </span>
+      ),
     },
     {
       accessorKey: "createdAt",
       header: "Waktu",
       cell: ({ row }) => (
-        <span className="text-muted-foreground text-sm">
-          {new Date(row.original.createdAt).toLocaleString("id-ID")}
+        <span className="text-sm text-muted-foreground">
+          {format(new Date(row.original.createdAt), "dd MMM yyyy HH:mm:ss", {
+            locale: idLocale,
+          })}
         </span>
       ),
     },
-  ]
+  ];
 
   return (
     <div className="space-y-6">
+      {/* Header */}
       <div>
         <h1 className="text-2xl font-bold tracking-tight">Audit Log</h1>
-        <p className="text-muted-foreground">Riwayat semua aktivitas sistem</p>
+        <p className="text-muted-foreground">
+          Riwayat semua aktivitas yang dilakukan dalam sistem
+        </p>
       </div>
 
+      {/* Table card */}
       <Card>
-        <CardHeader><CardTitle>Filter</CardTitle></CardHeader>
-        <CardContent>
-          <div className="flex gap-4">
-            <div className="relative flex-1">
-              <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
-              <Input className="pl-8" placeholder="Cari..." value={search} onChange={e => { setSearch(e.target.value); setPage(1) }} />
+        {/* Filter toolbar */}
+        <div className="border-b bg-muted/20 px-4 py-3">
+          <div className="flex flex-wrap items-center gap-3">
+            {/* Search */}
+            <div className="relative w-full max-w-xs">
+              <Search className="pointer-events-none absolute left-2.5 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+              <Input
+                placeholder="Cari user, tabel, atau record ID..."
+                className="h-9 pl-8 text-sm"
+                value={search}
+                onChange={(e) => { setSearch(e.target.value); resetPage(); }}
+              />
             </div>
-            <Select value={action} onValueChange={v => { setAction(v); setPage(1) }}>
-              <SelectTrigger className="w-40"><SelectValue /></SelectTrigger>
-              <SelectContent>
-                <SelectItem value="ALL">Semua Aksi</SelectItem>
-                <SelectItem value="CREATE">CREATE</SelectItem>
-                <SelectItem value="UPDATE">UPDATE</SelectItem>
-                <SelectItem value="DELETE">DELETE</SelectItem>
-                <SelectItem value="IMPORT">IMPORT</SelectItem>
-              </SelectContent>
-            </Select>
+
+            <div className="ml-auto flex flex-wrap items-center gap-2">
+              {/* Date from */}
+              <div className="flex items-center gap-1.5">
+                <span className="text-xs text-muted-foreground">Dari</span>
+                <Input
+                  type="date"
+                  className="h-9 w-[140px] text-sm"
+                  value={dateFrom}
+                  onChange={(e) => { setDateFrom(e.target.value); resetPage(); }}
+                />
+              </div>
+              <div className="flex items-center gap-1.5">
+                <span className="text-xs text-muted-foreground">s/d</span>
+                <Input
+                  type="date"
+                  className="h-9 w-[140px] text-sm"
+                  value={dateTo}
+                  onChange={(e) => { setDateTo(e.target.value); resetPage(); }}
+                />
+              </div>
+
+              {/* Action filter */}
+              <Select value={action} onValueChange={(v) => { setAction(v); resetPage(); }}>
+                <SelectTrigger className="h-9 w-[160px] text-sm">
+                  <SelectValue placeholder="Semua Aksi" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">Semua Aksi</SelectItem>
+                  <SelectItem value="CREATE">Tambah</SelectItem>
+                  <SelectItem value="UPDATE">Ubah</SelectItem>
+                  <SelectItem value="DELETE">Hapus</SelectItem>
+                  <SelectItem value="REASSIGN">Alih User</SelectItem>
+                  <SelectItem value="IMPORT">Import</SelectItem>
+                </SelectContent>
+              </Select>
+
+              {isAnyFilter && (
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={resetFilters}
+                  className="h-9 text-muted-foreground hover:text-foreground"
+                >
+                  <X className="mr-1 h-3.5 w-3.5" />
+                  Reset
+                </Button>
+              )}
+            </div>
           </div>
-        </CardContent>
-      </Card>
-
-      <Card>
-        <CardHeader>
-          <CardTitle>Log Aktivitas</CardTitle>
-          <CardDescription>Total {total} entri</CardDescription>
-        </CardHeader>
-        <CardContent className="p-0">
-          <DataTable
-            columns={columns}
-            data={logs}
-            isLoading={isLoading}
-            searchable={false}
-            paginated={false}
-          />
-        </CardContent>
-      </Card>
-
-      <div className="flex items-center justify-between">
-        <p className="text-sm text-muted-foreground">Halaman {page} dari {totalPages || 1}</p>
-        <div className="flex gap-2">
-          <Button variant="outline" size="sm" disabled={page <= 1} onClick={() => setPage(p => p - 1)}>
-            <ChevronLeft className="h-4 w-4" />Sebelumnya
-          </Button>
-          <Button variant="outline" size="sm" disabled={page >= totalPages} onClick={() => setPage(p => p + 1)}>
-            Selanjutnya<ChevronRight className="h-4 w-4" />
-          </Button>
         </div>
-      </div>
+
+        {/* Table */}
+        <DataTable
+          columns={columns}
+          data={logs}
+          isLoading={isLoading}
+          searchable={false}
+          paginated={false}
+        />
+
+        {/* Pagination */}
+        {!isLoading && total > 0 && (
+          <div className="flex flex-wrap items-center justify-between gap-3 border-t bg-muted/30 px-4 py-3">
+            <span className="text-xs font-medium text-muted-foreground">
+              <strong className="text-primary">
+                {(page - 1) * PAGE_SIZE + 1}–{Math.min(page * PAGE_SIZE, total)}
+              </strong>{" "}
+              dari <strong className="text-primary">{total}</strong> entri
+            </span>
+            {totalPages > 1 && (
+              <div className="flex items-center gap-1">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="h-8 rounded-full px-3 text-xs font-bold border-primary text-primary hover:bg-primary hover:text-primary-foreground disabled:border-border disabled:text-muted-foreground disabled:opacity-40"
+                  onClick={() => setPage(1)}
+                  disabled={page <= 1}
+                >
+                  First
+                </Button>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="h-8 rounded-full px-3 text-xs font-bold hover:border-primary hover:text-primary disabled:opacity-40"
+                  onClick={() => setPage((p) => p - 1)}
+                  disabled={page <= 1}
+                >
+                  <ChevronLeft className="mr-0.5 h-3 w-3" />Prev
+                </Button>
+                {buildPages(page, totalPages).map((p, i) =>
+                  p === "..." ? (
+                    <span
+                      key={`el-${i}`}
+                      className="flex h-8 w-8 items-center justify-center text-xs text-muted-foreground"
+                    >
+                      …
+                    </span>
+                  ) : (
+                    <Button
+                      key={p}
+                      variant={p === page ? "default" : "outline"}
+                      size="sm"
+                      className={`h-8 w-8 rounded-full p-0 text-xs font-semibold ${
+                        p === page ? "shadow-md" : "hover:border-primary hover:text-primary"
+                      }`}
+                      onClick={() => setPage(p as number)}
+                    >
+                      {p}
+                    </Button>
+                  ),
+                )}
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="h-8 rounded-full px-3 text-xs font-bold hover:border-primary hover:text-primary disabled:opacity-40"
+                  onClick={() => setPage((p) => p + 1)}
+                  disabled={page >= totalPages}
+                >
+                  Next<ChevronRight className="ml-0.5 h-3 w-3" />
+                </Button>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="h-8 rounded-full px-3 text-xs font-bold border-primary text-primary hover:bg-primary hover:text-primary-foreground disabled:border-border disabled:text-muted-foreground disabled:opacity-40"
+                  onClick={() => setPage(totalPages)}
+                  disabled={page >= totalPages}
+                >
+                  Last
+                </Button>
+              </div>
+            )}
+          </div>
+        )}
+      </Card>
     </div>
-  )
+  );
 }

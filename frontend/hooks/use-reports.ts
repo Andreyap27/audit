@@ -1,4 +1,4 @@
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { useQuery, useMutation } from "@tanstack/react-query";
 import api from "@/lib/api";
 
 export const useDashboardStats = () =>
@@ -22,9 +22,42 @@ export const useSoftwareReport = (type: SoftwareReportType) =>
       api.get("/reports/software", { params: { type } }).then((r) => r.data),
   });
 
+export interface LoanReportFilters {
+  status?: "BORROWED" | "RETURNED";
+  dateFrom?: string;
+  dateTo?: string;
+  search?: string;
+  page?: number;
+  limit?: number;
+}
+
+export const useLoanReport = (params: LoanReportFilters) =>
+  useQuery({
+    queryKey: ["reports", "loans", params],
+    queryFn: () =>
+      api.get("/reports/loans", { params }).then((r) => r.data),
+  });
+
+export const useExportLoanReport = () =>
+  useMutation({
+    mutationFn: async (params: { status?: string; dateFrom?: string; dateTo?: string }) => {
+      const res = await api.get("/reports/loans/export", {
+        params,
+        responseType: "blob",
+      });
+      const url = URL.createObjectURL(new Blob([res.data]));
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = `laporan-peminjaman-${Date.now()}.xlsx`;
+      a.click();
+      URL.revokeObjectURL(url);
+    },
+  });
+
 export const useAuditLog = (params: {
   action?: string;
   userId?: string;
+  search?: string;
   dateFrom?: string;
   dateTo?: string;
   page?: number;

@@ -1,8 +1,8 @@
-"use client"
+"use client";
 
-import * as React from "react"
-import Link from "next/link"
-import { usePathname } from "next/navigation"
+import * as React from "react";
+import Link from "next/link";
+import { usePathname } from "next/navigation";
 import {
   LayoutDashboard,
   Monitor,
@@ -18,7 +18,8 @@ import {
   Users,
   Settings,
   ChevronRight,
-} from "lucide-react"
+  ClipboardCheck,
+} from "lucide-react";
 
 import {
   Sidebar,
@@ -33,12 +34,12 @@ import {
   SidebarMenuSub,
   SidebarMenuSubButton,
   SidebarMenuSubItem,
-} from "@/components/ui/sidebar"
+} from "@/components/ui/sidebar";
 import {
   Collapsible,
   CollapsibleContent,
   CollapsibleTrigger,
-} from "@/components/ui/collapsible"
+} from "@/components/ui/collapsible";
 
 const menuItems = [
   {
@@ -56,12 +57,25 @@ const menuItems = [
     ],
   },
   {
+    title: "Peminjaman",
+    url: "/loans",
+    icon: ClipboardCheck,
+  },
+  {
     title: "Master Data",
     icon: Package,
     items: [
       { title: "Departemen", url: "/master/departments", icon: Building2 },
-      { title: "Operating System", url: "/master/operating-systems", icon: HardDrive },
-      { title: "Microsoft Software", url: "/master/microsoft/office", icon: Boxes },
+      {
+        title: "Operating System",
+        url: "/master/operating-systems",
+        icon: HardDrive,
+      },
+      {
+        title: "Microsoft Software",
+        url: "/master/microsoft/office",
+        icon: Boxes,
+      },
       { title: "Unit Type", url: "/master/unit-types", icon: Monitor },
     ],
   },
@@ -70,21 +84,24 @@ const menuItems = [
     icon: BarChart3,
     items: [
       { title: "Per Departemen", url: "/reports/departments", icon: FileText },
-      { title: "Lisensi Software", url: "/reports/software", icon: ClipboardList },
+      {
+        title: "Lisensi Software",
+        url: "/reports/software",
+        icon: ClipboardList,
+      },
+      { title: "Peminjaman", url: "/reports/loans", icon: ClipboardCheck },
       { title: "Audit Log", url: "/reports/audit-log", icon: ClipboardList },
     ],
   },
   {
     title: "Pengaturan",
     icon: Settings,
-    items: [
-      { title: "Manajemen User", url: "/settings/users", icon: Users },
-    ],
+    items: [{ title: "Manajemen User", url: "/settings/users", icon: Users }],
   },
-]
+];
 
 export function AppSidebar() {
-  const pathname = usePathname()
+  const pathname = usePathname();
 
   return (
     <Sidebar>
@@ -95,7 +112,9 @@ export function AppSidebar() {
           </div>
           <div className="flex flex-col">
             <span className="text-sm font-semibold">IT Inventory</span>
-            <span className="text-xs text-muted-foreground">Management System</span>
+            <span className="text-xs text-muted-foreground">
+              Management System
+            </span>
           </div>
         </Link>
       </SidebarHeader>
@@ -106,7 +125,13 @@ export function AppSidebar() {
             <SidebarMenu>
               {menuItems.map((item) =>
                 item.items ? (
-                  <Collapsible key={item.title} asChild defaultOpen={item.items.some(subItem => pathname.startsWith(subItem.url))}>
+                  <Collapsible
+                    key={item.title}
+                    asChild
+                    defaultOpen={item.items.some((subItem) =>
+                      pathname === subItem.url || pathname.startsWith(subItem.url + "/"),
+                    )}
+                  >
                     <SidebarMenuItem>
                       <CollapsibleTrigger asChild>
                         <SidebarMenuButton tooltip={item.title}>
@@ -119,7 +144,13 @@ export function AppSidebar() {
                         <SidebarMenuSub>
                           {item.items.map((subItem) => (
                             <SidebarMenuSubItem key={subItem.title}>
-                              <SidebarMenuSubButton asChild isActive={pathname === subItem.url}>
+                              <SidebarMenuSubButton
+                                asChild
+                                isActive={
+                                  pathname === subItem.url ||
+                                  pathname.startsWith(subItem.url + "/")
+                                }
+                              >
                                 <Link href={subItem.url}>
                                   <subItem.icon className="h-4 w-4" />
                                   <span>{subItem.title}</span>
@@ -133,19 +164,23 @@ export function AppSidebar() {
                   </Collapsible>
                 ) : (
                   <SidebarMenuItem key={item.title}>
-                    <SidebarMenuButton asChild isActive={pathname === item.url} tooltip={item.title}>
+                    <SidebarMenuButton
+                      asChild
+                      isActive={pathname === item.url}
+                      tooltip={item.title}
+                    >
                       <Link href={item.url}>
                         {item.icon && <item.icon className="h-4 w-4" />}
                         <span>{item.title}</span>
                       </Link>
                     </SidebarMenuButton>
                   </SidebarMenuItem>
-                )
+                ),
               )}
             </SidebarMenu>
           </SidebarGroupContent>
         </SidebarGroup>
       </SidebarContent>
     </Sidebar>
-  )
+  );
 }

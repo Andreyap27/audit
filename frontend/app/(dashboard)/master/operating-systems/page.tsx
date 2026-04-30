@@ -93,9 +93,6 @@ export default function OperatingSystemsPage() {
       </div>
 
       <Card>
-        <CardHeader>
-          <CardTitle>Daftar OS</CardTitle>
-        </CardHeader>
         <CardContent className="p-0">
           <DataTable
             columns={columns}

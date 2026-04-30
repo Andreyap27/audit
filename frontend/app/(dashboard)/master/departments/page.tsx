@@ -105,9 +105,6 @@ export default function DepartmentsPage() {
       </div>
 
       <Card>
-        <CardHeader>
-          <CardTitle>Daftar Departemen</CardTitle>
-        </CardHeader>
         <CardContent className="p-0">
           <DataTable
             columns={columns}

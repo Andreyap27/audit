@@ -9,5 +9,7 @@ router.get("/stats", ctrl.getStats);
 router.get("/departments", ctrl.getDepartmentReport);
 router.get("/software", ctrl.getSoftwareReport);
 router.get("/audit-log", ctrl.getAuditLog);
+router.get("/loans", ctrl.getLoanReport);
+router.get("/loans/export", ctrl.exportLoanReport);
 
 export default router;

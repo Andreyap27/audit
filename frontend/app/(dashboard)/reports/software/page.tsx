@@ -2,7 +2,7 @@
 
 import { useState } from "react"
 import type { ColumnDef } from "@tanstack/react-table"
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
+import { Card } from "@/components/ui/card"
 import { DataTable } from "@/components/ui/data-table"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Badge } from "@/components/ui/badge"
@@ -31,23 +31,15 @@ const tabs: { value: MsType; label: string }[] = [
   { value: "ACCESS", label: "Access" },
 ]
 
-function SoftwareTab({ type, label }: { type: MsType; label: string }) {
+function SoftwareTab({ type }: { type: MsType }) {
   const { data: report, isLoading } = useSoftwareReport(type)
   return (
     <Card>
-      <CardHeader>
-        <CardTitle>Distribusi {label}</CardTitle>
-        <CardDescription>Jumlah device per versi {label}</CardDescription>
-      </CardHeader>
-      <CardContent className="p-0">
-        <DataTable
-          columns={columns}
-          data={(report ?? []) as SoftwareRow[]}
-          isLoading={isLoading}
-          searchable={false}
-          paginated={false}
-        />
-      </CardContent>
+      <DataTable
+        columns={columns}
+        data={(report ?? []) as SoftwareRow[]}
+        isLoading={isLoading}
+      />
     </Card>
   )
 }
@@ -68,7 +60,7 @@ export default function SoftwareReportPage() {
         </TabsList>
         {tabs.map(t => (
           <TabsContent key={t.value} value={t.value}>
-            <SoftwareTab type={t.value} label={t.label} />
+            <SoftwareTab type={t.value} />
           </TabsContent>
         ))}
       </Tabs>

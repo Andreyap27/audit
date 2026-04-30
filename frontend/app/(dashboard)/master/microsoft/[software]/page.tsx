@@ -104,9 +104,6 @@ export default function MicrosoftPage() {
       </div>
 
       <Card>
-        <CardHeader>
-          <CardTitle>Daftar {label}</CardTitle>
-        </CardHeader>
         <CardContent className="p-0">
           <DataTable
             columns={columns}
