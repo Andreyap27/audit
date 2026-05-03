@@ -28,7 +28,15 @@ export const create = async (data: {
   type: MsType;
   version: string;
   licenseType: string;
-}) => prisma.microsoftSoftware.create({ data });
+  serialNumber?: string;
+  proofPaths?: string[];
+}) =>
+  prisma.microsoftSoftware.create({
+    data: {
+      ...data,
+      proofPaths: data.proofPaths ?? [],
+    },
+  });
 
 export const update = async (
   id: string,
@@ -36,6 +44,8 @@ export const update = async (
     type?: MsType;
     version?: string;
     licenseType?: string;
+    serialNumber?: string;
+    proofPaths?: string[];
     isActive?: boolean;
   },
 ) => {

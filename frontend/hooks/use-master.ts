@@ -57,6 +57,8 @@ export const useCreateOs = () => {
       name: string;
       version: string;
       licenseType: string;
+      serialNumber?: string;
+      proofPaths?: string[];
     }) => api.post("/operating-systems", data).then((r) => r.data),
     onSuccess: () => qc.invalidateQueries({ queryKey: ["operating-systems"] }),
   });
@@ -73,6 +75,8 @@ export const useUpdateOs = () => {
       name?: string;
       version?: string;
       licenseType?: string;
+      serialNumber?: string;
+      proofPaths?: string[];
       isActive?: boolean;
     }) => api.put(`/operating-systems/${id}`, data).then((r) => r.data),
     onSuccess: () => qc.invalidateQueries({ queryKey: ["operating-systems"] }),
@@ -146,6 +150,8 @@ export const useCreateMicrosoft = () => {
       type: MsType;
       version: string;
       licenseType: string;
+      serialNumber?: string;
+      proofPaths?: string[];
     }) => api.post("/microsoft", data).then((r) => r.data),
     onSuccess: (_data, vars) =>
       qc.invalidateQueries({ queryKey: ["microsoft", vars.type] }),
@@ -163,6 +169,8 @@ export const useUpdateMicrosoft = () => {
       type?: MsType;
       version?: string;
       licenseType?: string;
+      serialNumber?: string;
+      proofPaths?: string[];
       isActive?: boolean;
     }) => api.put(`/microsoft/${id}`, data).then((r) => r.data),
     onSuccess: () => qc.invalidateQueries({ queryKey: ["microsoft"] }),

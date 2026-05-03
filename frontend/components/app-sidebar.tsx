@@ -19,6 +19,7 @@ import {
   Settings,
   ChevronRight,
   ClipboardCheck,
+  type LucideIcon,
 } from "lucide-react";
 
 import {
@@ -41,7 +42,14 @@ import {
   CollapsibleTrigger,
 } from "@/components/ui/collapsible";
 
-const menuItems = [
+type LeafItem = { title: string; url: string; icon: LucideIcon };
+type GroupItem = { title: string; icon: LucideIcon; items: LeafItem[] };
+type SubItem = LeafItem | GroupItem;
+type MenuItem =
+  | { title: string; url: string; icon: LucideIcon; items?: never }
+  | { title: string; icon: LucideIcon; url?: never; items: SubItem[] };
+
+const menuItems: MenuItem[] = [
   {
     title: "Dashboard",
     url: "/",
@@ -73,8 +81,13 @@ const menuItems = [
       },
       {
         title: "Microsoft Software",
-        url: "/master/microsoft/office",
         icon: Boxes,
+        items: [
+          { title: "Office", url: "/master/microsoft/office", icon: Boxes },
+          { title: "Visio", url: "/master/microsoft/visio", icon: Boxes },
+          { title: "Project", url: "/master/microsoft/project", icon: Boxes },
+          { title: "Access", url: "/master/microsoft/access", icon: Boxes },
+        ],
       },
       { title: "Unit Type", url: "/master/unit-types", icon: Monitor },
     ],
@@ -129,7 +142,9 @@ export function AppSidebar() {
                     key={item.title}
                     asChild
                     defaultOpen={item.items.some((subItem) =>
-                      pathname === subItem.url || pathname.startsWith(subItem.url + "/"),
+                      "items" in subItem
+                        ? subItem.items.some((s) => pathname === s.url || pathname.startsWith(s.url + "/"))
+                        : pathname === subItem.url || pathname.startsWith(subItem.url + "/"),
                     )}
                   >
                     <SidebarMenuItem>
@@ -142,22 +157,65 @@ export function AppSidebar() {
                       </CollapsibleTrigger>
                       <CollapsibleContent>
                         <SidebarMenuSub>
-                          {item.items.map((subItem) => (
-                            <SidebarMenuSubItem key={subItem.title}>
-                              <SidebarMenuSubButton
+                          {item.items.map((subItem) =>
+                            "items" in subItem ? (
+                              <Collapsible
+                                key={subItem.title}
                                 asChild
-                                isActive={
-                                  pathname === subItem.url ||
-                                  pathname.startsWith(subItem.url + "/")
-                                }
+                                defaultOpen={subItem.items.some((s) =>
+                                  pathname === s.url || pathname.startsWith(s.url + "/"),
+                                )}
                               >
-                                <Link href={subItem.url}>
-                                  <subItem.icon className="h-4 w-4" />
-                                  <span>{subItem.title}</span>
-                                </Link>
-                              </SidebarMenuSubButton>
-                            </SidebarMenuSubItem>
-                          ))}
+                                <SidebarMenuSubItem>
+                                  <CollapsibleTrigger asChild>
+                                    <SidebarMenuSubButton
+                                      isActive={subItem.items.some((s) =>
+                                        pathname === s.url || pathname.startsWith(s.url + "/"),
+                                      )}
+                                    >
+                                      <subItem.icon className="h-4 w-4" />
+                                      <span>{subItem.title}</span>
+                                      <ChevronRight className="ml-auto h-3 w-3 transition-transform duration-200 group-data-[state=open]/collapsible:rotate-90" />
+                                    </SidebarMenuSubButton>
+                                  </CollapsibleTrigger>
+                                  <CollapsibleContent>
+                                    <SidebarMenuSub>
+                                      {subItem.items.map((leaf) => (
+                                        <SidebarMenuSubItem key={leaf.title}>
+                                          <SidebarMenuSubButton
+                                            asChild
+                                            isActive={
+                                              pathname === leaf.url ||
+                                              pathname.startsWith(leaf.url + "/")
+                                            }
+                                          >
+                                            <Link href={leaf.url}>
+                                              <span>{leaf.title}</span>
+                                            </Link>
+                                          </SidebarMenuSubButton>
+                                        </SidebarMenuSubItem>
+                                      ))}
+                                    </SidebarMenuSub>
+                                  </CollapsibleContent>
+                                </SidebarMenuSubItem>
+                              </Collapsible>
+                            ) : (
+                              <SidebarMenuSubItem key={subItem.title}>
+                                <SidebarMenuSubButton
+                                  asChild
+                                  isActive={
+                                    pathname === subItem.url ||
+                                    pathname.startsWith(subItem.url + "/")
+                                  }
+                                >
+                                  <Link href={subItem.url}>
+                                    <subItem.icon className="h-4 w-4" />
+                                    <span>{subItem.title}</span>
+                                  </Link>
+                                </SidebarMenuSubButton>
+                              </SidebarMenuSubItem>
+                            ),
+                          )}
                         </SidebarMenuSub>
                       </CollapsibleContent>
                     </SidebarMenuItem>

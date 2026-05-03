@@ -6,6 +6,8 @@ export const createMicrosoftSchema = z.object({
   type: msTypeEnum,
   version: z.string().min(1),
   licenseType: z.string().min(1),
+  serialNumber: z.string().optional(),
+  proofPaths: z.array(z.string()).optional().default([]),
 });
 
 export const updateMicrosoftSchema = createMicrosoftSchema.partial().extend({

@@ -38,28 +38,30 @@ model Department {
 }
 
 model OperatingSystem {
-  id          String  @id @default(uuid())
-  name        String  @unique
-  version     String
-  licenseType String
-  isActive    Boolean @default(true)
+  id           String   @id @default(uuid())
+  name         String
+  version      String
+  licenseType  String
+  serialNumber String?  @unique
+  proofPaths   String[] @default([])
+  isActive     Boolean  @default(true)
 
   devices Device[]
 }
 
 model MicrosoftSoftware {
-  id          String  @id @default(uuid())
-  type        MsType
-  version     String
-  licenseType String
-  isActive    Boolean @default(true)
+  id           String   @id @default(uuid())
+  type         MsType
+  version      String
+  licenseType  String
+  serialNumber String?  @unique
+  proofPaths   String[] @default([])
+  isActive     Boolean  @default(true)
 
   officeDevices  Device[] @relation("DeviceOffice")
   visioDevices   Device[] @relation("DeviceVisio")
   projectDevices Device[] @relation("DeviceProject")
   accessDevices  Device[] @relation("DeviceAccess")
-
-  @@unique([type, version, licenseType])
 }
 
 enum MsType {
@@ -105,14 +107,9 @@ model Device {
   access   MicrosoftSoftware? @relation("DeviceAccess", fields: [accessId], references: [id])
   accessId String?
 
-  notes     String?
-  serialNumberProofPath    String?
-  operatingSystemProofPath String?
-  officeProofPath          String?
-  visioProofPath           String?
-  projectProofPath         String?
-  accessProofPath          String?
-  isActive  Boolean  @default(true)
+  notes                 String?
+  serialNumberProofPath String?
+  isActive              Boolean  @default(true)
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
@@ -160,12 +157,7 @@ model DeviceAssignmentHistory {
   projectLabel         String?
   accessLabel          String?
 
-  serialNumberProofPath    String?
-  operatingSystemProofPath String?
-  officeProofPath          String?
-  visioProofPath           String?
-  projectProofPath         String?
-  accessProofPath          String?
+  serialNumberProofPath String?
 
   reassignmentNote String?
   assignedAt       DateTime @default(now())

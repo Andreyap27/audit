@@ -1,4 +1,4 @@
-﻿"use client";
+"use client";
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
@@ -29,6 +29,7 @@ import {
   useMicrosoftSoftware,
 } from "@/hooks/use-master";
 import { EvidenceUploadField } from "@/components/devices/evidence-upload-field";
+import { LicenseCombobox } from "@/components/devices/license-combobox";
 import { useGlobalModal } from "@/lib/global-modal";
 
 export default function NewDevicePage() {
@@ -44,11 +45,6 @@ export default function NewDevicePage() {
     projectId: "",
     accessId: "",
     serialNumberProofPath: "",
-    operatingSystemProofPath: "",
-    officeProofPath: "",
-    visioProofPath: "",
-    projectProofPath: "",
-    accessProofPath: "",
   });
 
   const { data: departments } = useDepartments();
@@ -66,9 +62,11 @@ export default function NewDevicePage() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!form.serialNumber || !form.departmentId || !form.unitTypeId) {
-      modal.error({
-        title: "Serial Number, Departemen, dan Tipe Unit wajib diisi",
-      });
+      modal.error({ title: "Serial Number, Departemen, dan Tipe Unit wajib diisi" });
+      return;
+    }
+    if (!form.operatingSystemId || form.operatingSystemId === "none") {
+      modal.error({ title: "Operating System wajib dipilih" });
       return;
     }
     try {
@@ -92,11 +90,6 @@ export default function NewDevicePage() {
         accessId:
           form.accessId && form.accessId !== "none" ? form.accessId : undefined,
         serialNumberProofPath: form.serialNumberProofPath || undefined,
-        operatingSystemProofPath: form.operatingSystemProofPath || undefined,
-        officeProofPath: form.officeProofPath || undefined,
-        visioProofPath: form.visioProofPath || undefined,
-        projectProofPath: form.projectProofPath || undefined,
-        accessProofPath: form.accessProofPath || undefined,
       });
       modal.success({ title: "Device berhasil ditambahkan" });
       router.push("/devices");
@@ -203,40 +196,23 @@ export default function NewDevicePage() {
         <Card>
           <CardHeader>
             <CardTitle>Operating System</CardTitle>
-            <CardDescription>Informasi sistem operasi</CardDescription>
+            <CardDescription>
+              Pilih lisensi OS dari master data. Bukti lisensi dikelola di Master OS.
+            </CardDescription>
           </CardHeader>
           <CardContent>
             <FieldGroup className="grid gap-4 md:grid-cols-2">
               <Field>
-                <FieldLabel>Versi OS</FieldLabel>
-                <Select
+                <FieldLabel>Versi OS *</FieldLabel>
+                <LicenseCombobox
+                  options={(osList ?? []).map((os: { id: string; version: string; licenseType: string; serialNumber?: string | null }) => ({
+                    id: os.id,
+                    label: `${os.version} ${os.licenseType}`,
+                    serialNumber: os.serialNumber,
+                  }))}
                   value={form.operatingSystemId}
-                  onValueChange={(v) => set("operatingSystemId", v)}
-                >
-                  <SelectTrigger>
-                    <SelectValue placeholder="Pilih versi OS" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="none">Tidak Ada</SelectItem>
-                    {(osList ?? []).map(
-                      (os: {
-                        id: string;
-                        version: string;
-                        licenseType: string;
-                      }) => (
-                        <SelectItem key={os.id} value={String(os.id)}>
-                          Windows {os.version} {os.licenseType}
-                        </SelectItem>
-                      ),
-                    )}
-                  </SelectContent>
-                </Select>
-                <EvidenceUploadField
-                  label="Operating System"
-                  value={form.operatingSystemProofPath}
-                  serialNumber={form.serialNumber}
-                  onUploaded={(path) => set("operatingSystemProofPath", path)}
-                  onError={(message) => modal.error({ title: message })}
+                  onChange={(v) => set("operatingSystemId", v)}
+                  placeholder="Cari versi OS atau serial number..."
                 />
               </Field>
             </FieldGroup>
@@ -246,136 +222,62 @@ export default function NewDevicePage() {
         <Card>
           <CardHeader>
             <CardTitle>Microsoft Software</CardTitle>
-            <CardDescription>Aplikasi Microsoft yang terinstal</CardDescription>
+            <CardDescription>
+              Pilih lisensi dari master data. Bukti lisensi dikelola di Master Microsoft.
+            </CardDescription>
           </CardHeader>
           <CardContent>
             <FieldGroup className="grid gap-4 md:grid-cols-2">
               <Field>
                 <FieldLabel>Microsoft Office</FieldLabel>
-                <Select
+                <LicenseCombobox
+                  options={(officeList ?? []).map((o: { id: string; version: string; licenseType: string; serialNumber?: string | null }) => ({
+                    id: o.id,
+                    label: `Office ${o.version} ${o.licenseType}`,
+                    serialNumber: o.serialNumber,
+                  }))}
                   value={form.officeId}
-                  onValueChange={(v) => set("officeId", v)}
-                >
-                  <SelectTrigger>
-                    <SelectValue placeholder="Pilih versi Office" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="none">Tidak Ada</SelectItem>
-                    {(officeList ?? []).map(
-                      (o: {
-                        id: string;
-                        version: string;
-                        licenseType: string;
-                      }) => (
-                        <SelectItem key={o.id} value={String(o.id)}>
-                          Office {o.version} {o.licenseType}
-                        </SelectItem>
-                      ),
-                    )}
-                  </SelectContent>
-                </Select>
-                <EvidenceUploadField
-                  label="Microsoft Office"
-                  value={form.officeProofPath}
-                  serialNumber={form.serialNumber}
-                  onUploaded={(path) => set("officeProofPath", path)}
-                  onError={(message) => modal.error({ title: message })}
+                  onChange={(v) => set("officeId", v)}
+                  placeholder="Cari Office atau serial number..."
                 />
               </Field>
               <Field>
                 <FieldLabel>Microsoft Visio</FieldLabel>
-                <Select
+                <LicenseCombobox
+                  options={(visioList ?? []).map((o: { id: string; version: string; licenseType: string; serialNumber?: string | null }) => ({
+                    id: o.id,
+                    label: `Visio ${o.version} ${o.licenseType}`,
+                    serialNumber: o.serialNumber,
+                  }))}
                   value={form.visioId}
-                  onValueChange={(v) => set("visioId", v)}
-                >
-                  <SelectTrigger>
-                    <SelectValue placeholder="Pilih versi Visio" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="none">Tidak Ada</SelectItem>
-                    {(visioList ?? []).map(
-                      (o: {
-                        id: string;
-                        version: string;
-                        licenseType: string;
-                      }) => (
-                        <SelectItem key={o.id} value={String(o.id)}>
-                          Visio {o.version} {o.licenseType}
-                        </SelectItem>
-                      ),
-                    )}
-                  </SelectContent>
-                </Select>
-                <EvidenceUploadField
-                  label="Microsoft Visio"
-                  value={form.visioProofPath}
-                  serialNumber={form.serialNumber}
-                  onUploaded={(path) => set("visioProofPath", path)}
-                  onError={(message) => modal.error({ title: message })}
+                  onChange={(v) => set("visioId", v)}
+                  placeholder="Cari Visio atau serial number..."
                 />
               </Field>
               <Field>
                 <FieldLabel>Microsoft Project</FieldLabel>
-                <Select
+                <LicenseCombobox
+                  options={(projectList ?? []).map((o: { id: string; version: string; licenseType: string; serialNumber?: string | null }) => ({
+                    id: o.id,
+                    label: `Project ${o.version} ${o.licenseType}`,
+                    serialNumber: o.serialNumber,
+                  }))}
                   value={form.projectId}
-                  onValueChange={(v) => set("projectId", v)}
-                >
-                  <SelectTrigger>
-                    <SelectValue placeholder="Pilih versi Project" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="none">Tidak Ada</SelectItem>
-                    {(projectList ?? []).map(
-                      (o: {
-                        id: string;
-                        version: string;
-                        licenseType: string;
-                      }) => (
-                        <SelectItem key={o.id} value={String(o.id)}>
-                          Project {o.version} {o.licenseType}
-                        </SelectItem>
-                      ),
-                    )}
-                  </SelectContent>
-                </Select>
-                <EvidenceUploadField
-                  label="Microsoft Project"
-                  value={form.projectProofPath}
-                  serialNumber={form.serialNumber}
-                  onUploaded={(path) => set("projectProofPath", path)}
-                  onError={(message) => modal.error({ title: message })}
+                  onChange={(v) => set("projectId", v)}
+                  placeholder="Cari Project atau serial number..."
                 />
               </Field>
               <Field>
                 <FieldLabel>Microsoft Access</FieldLabel>
-                <Select
+                <LicenseCombobox
+                  options={(accessList ?? []).map((o: { id: string; version: string; licenseType: string; serialNumber?: string | null }) => ({
+                    id: o.id,
+                    label: `Access ${o.version} ${o.licenseType}`,
+                    serialNumber: o.serialNumber,
+                  }))}
                   value={form.accessId}
-                  onValueChange={(v) => set("accessId", v)}
-                >
-                  <SelectTrigger>
-                    <SelectValue placeholder="Pilih versi Access" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="none">Tidak Ada</SelectItem>
-                    {(accessList ?? []).map(
-                      (o: {
-                        id: string;
-                        version: string;
-                        licenseType: string;
-                      }) => (
-                        <SelectItem key={o.id} value={String(o.id)}>
-                          Access {o.version} {o.licenseType}
-                        </SelectItem>
-                      ),
-                    )}
-                  </SelectContent>
-                </Select>
-                <EvidenceUploadField
-                  label="Microsoft Access"
-                  value={form.accessProofPath}
-                  serialNumber={form.serialNumber}
-                  onUploaded={(path) => set("accessProofPath", path)}
-                  onError={(message) => modal.error({ title: message })}
+                  onChange={(v) => set("accessId", v)}
+                  placeholder="Cari Access atau serial number..."
                 />
               </Field>
             </FieldGroup>

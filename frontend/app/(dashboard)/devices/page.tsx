@@ -33,6 +33,7 @@ import {
   ChevronRight,
   X,
   QrCode,
+  FileQuestion,
 } from "lucide-react";
 import { useDevices, useDeleteDevice } from "@/hooks/use-devices";
 import {
@@ -55,17 +56,12 @@ type DeviceRow = {
   userName: string | null;
   department: { code: string } | null;
   unitType: { name: string } | null;
-  operatingSystem: { version: string; licenseType: string } | null;
-  office: { version: string; licenseType: string } | null;
-  visio: { version: string } | null;
-  project: { version: string } | null;
-  access: { version: string } | null;
+  operatingSystem: { version: string; licenseType: string; proofPaths?: string[] } | null;
+  office: { version: string; licenseType: string; proofPaths?: string[] } | null;
+  visio: { version: string; proofPaths?: string[] } | null;
+  project: { version: string; proofPaths?: string[] } | null;
+  access: { version: string; proofPaths?: string[] } | null;
   serialNumberProofPath?: string | null;
-  operatingSystemProofPath?: string | null;
-  officeProofPath?: string | null;
-  visioProofPath?: string | null;
-  projectProofPath?: string | null;
-  accessProofPath?: string | null;
 };
 
 function buildPages(current: number, total: number): (number | "...")[] {
@@ -83,12 +79,12 @@ export default function DevicesPage() {
   const [osFilter, setOsFilter] = useState("all");
   const [officeFilter, setOfficeFilter] = useState("all");
   const [page, setPage] = useState(1);
-  const [preview, setPreview] = useState<{ title: string; path: string } | null>(null);
+  const [preview, setPreview] = useState<{ title: string; path: string | null } | null>(null);
   const [previewText, setPreviewText] = useState<string | null>(null);
   const modal = useGlobalModal();
 
   useEffect(() => {
-    if (!preview || /\.(png|jpg|jpeg|gif|webp)$/i.test(preview.path)) {
+    if (!preview?.path || /\.(png|jpg|jpeg|gif|webp)$/i.test(preview.path)) {
       setPreviewText(null);
       return;
     }
@@ -160,13 +156,18 @@ export default function DevicesPage() {
     });
   };
 
-  const renderProofText = (label: string, value: string, proofPath?: string | null) => {
-    if (!proofPath) return <span>{value}</span>;
+  const renderProofText = (
+    label: string,
+    value: string,
+    proofPath: string | null | undefined,
+    alwaysClickable = false,
+  ) => {
+    if (!proofPath && !alwaysClickable) return <span>{value}</span>;
     return (
       <button
         type="button"
         className="text-left underline underline-offset-2 hover:text-primary"
-        onClick={() => setPreview({ title: label, path: proofPath })}
+        onClick={() => setPreview({ title: label, path: proofPath ?? null })}
       >
         {value}
       </button>
@@ -206,6 +207,7 @@ export default function DevicesPage() {
               "Bukti Serial Number",
               row.original.serialNumber,
               row.original.serialNumberProofPath,
+              true,
             )}
           </span>
         </div>
@@ -236,44 +238,55 @@ export default function DevicesPage() {
       id: "os",
       header: "OS",
       cell: ({ row }) => {
-        const text = row.original.operatingSystem
-          ? `Win ${row.original.operatingSystem.version} ${row.original.operatingSystem.licenseType}`
-          : "-";
-        return renderProofText("Bukti Operating System", text, row.original.operatingSystemProofPath);
+        const os = row.original.operatingSystem;
+        if (!os) return <span>-</span>;
+        const text = `${os.version} ${os.licenseType}`;
+        const proofPath = os.proofPaths?.[0] ?? null;
+        return renderProofText("Bukti Operating System", text, proofPath);
       },
     },
     {
       id: "office",
       header: "Office",
       cell: ({ row }) => {
-        const text = row.original.office
-          ? `Office ${row.original.office.version} ${row.original.office.licenseType}`
-          : "-";
-        return renderProofText("Bukti Microsoft Office", text, row.original.officeProofPath);
+        const office = row.original.office;
+        if (!office) return <span>-</span>;
+        const text = `Office ${office.version} ${office.licenseType}`;
+        const proofPath = office.proofPaths?.[0] ?? null;
+        return renderProofText("Bukti Microsoft Office", text, proofPath);
       },
     },
     {
       id: "visio",
       header: "Visio",
       cell: ({ row }) => {
-        const text = row.original.visio ? `Visio ${row.original.visio.version}` : "-";
-        return renderProofText("Bukti Microsoft Visio", text, row.original.visioProofPath);
+        const visio = row.original.visio;
+        if (!visio) return <span>-</span>;
+        const text = `Visio ${visio.version}`;
+        const proofPath = visio.proofPaths?.[0] ?? null;
+        return renderProofText("Bukti Microsoft Visio", text, proofPath);
       },
     },
     {
       id: "project",
       header: "Project",
       cell: ({ row }) => {
-        const text = row.original.project ? `Project ${row.original.project.version}` : "-";
-        return renderProofText("Bukti Microsoft Project", text, row.original.projectProofPath);
+        const project = row.original.project;
+        if (!project) return <span>-</span>;
+        const text = `Project ${project.version}`;
+        const proofPath = project.proofPaths?.[0] ?? null;
+        return renderProofText("Bukti Microsoft Project", text, proofPath);
       },
     },
     {
       id: "access",
       header: "Access",
       cell: ({ row }) => {
-        const text = row.original.access ? `Access ${row.original.access.version}` : "-";
-        return renderProofText("Bukti Microsoft Access", text, row.original.accessProofPath);
+        const access = row.original.access;
+        if (!access) return <span>-</span>;
+        const text = `Access ${access.version}`;
+        const proofPath = access.proofPaths?.[0] ?? null;
+        return renderProofText("Bukti Microsoft Access", text, proofPath);
       },
     },
     {
@@ -362,7 +375,7 @@ export default function DevicesPage() {
                   <SelectItem value="all">Semua OS</SelectItem>
                   {(osList ?? []).map((o: { id: string; version: string; licenseType: string }) => (
                     <SelectItem key={o.id} value={o.id}>
-                      Windows {o.version} ({o.licenseType})
+                      {o.version} ({o.licenseType})
                     </SelectItem>
                   ))}
                 </SelectContent>
@@ -488,29 +501,36 @@ export default function DevicesPage() {
             <DialogDescription>Preview bukti file yang di-upload</DialogDescription>
           </DialogHeader>
           {preview && (
-            <div className="flex min-h-0 flex-1 flex-col gap-3 overflow-hidden">
-              <div className="min-h-0 flex-1 overflow-auto rounded-md border">
-                {/\.(png|jpg|jpeg|gif|webp)$/i.test(preview.path) ? (
-                  <img
-                    src={`${FILE_BASE_URL}${preview.path}`}
-                    alt={preview.title}
-                    className="max-h-full w-auto"
-                  />
-                ) : (
-                  <pre className="h-full w-full bg-muted p-4 text-xs whitespace-pre-wrap break-all">
-                    {previewText ?? "Memuat..."}
-                  </pre>
-                )}
+            preview.path ? (
+              <div className="flex min-h-0 flex-1 flex-col gap-3 overflow-hidden">
+                <div className="min-h-0 flex-1 overflow-auto rounded-md border">
+                  {/\.(png|jpg|jpeg|gif|webp)$/i.test(preview.path) ? (
+                    <img
+                      src={`${FILE_BASE_URL}${preview.path}`}
+                      alt={preview.title}
+                      className="max-h-full w-auto"
+                    />
+                  ) : (
+                    <pre className="h-full w-full bg-muted p-4 text-xs whitespace-pre-wrap break-all">
+                      {previewText ?? "Memuat..."}
+                    </pre>
+                  )}
+                </div>
+                <a
+                  href={`${FILE_BASE_URL}${preview.path}`}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="shrink-0 text-sm underline underline-offset-2"
+                >
+                  Buka file di tab baru
+                </a>
               </div>
-              <a
-                href={`${FILE_BASE_URL}${preview.path}`}
-                target="_blank"
-                rel="noreferrer"
-                className="shrink-0 text-sm underline underline-offset-2"
-              >
-                Buka file di tab baru
-              </a>
-            </div>
+            ) : (
+              <div className="flex flex-col items-center justify-center gap-3 py-12 text-muted-foreground">
+                <FileQuestion className="h-10 w-10" />
+                <p className="text-sm">Belum ada file bukti yang diupload</p>
+              </div>
+            )
           )}
         </DialogContent>
       </Dialog>

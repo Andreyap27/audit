@@ -10,18 +10,13 @@ export const createDeviceSchema = z.object({
   userName: z.string().optional(),
   departmentId: z.string().uuid(),
   unitTypeId: z.string().uuid(),
-  operatingSystemId: optionalUuid,
+  operatingSystemId: z.string().uuid(),
   officeId: optionalUuid,
   visioId: optionalUuid,
   projectId: optionalUuid,
   accessId: optionalUuid,
   notes: z.string().optional(),
   serialNumberProofPath: z.string().optional(),
-  operatingSystemProofPath: z.string().optional(),
-  officeProofPath: z.string().optional(),
-  visioProofPath: z.string().optional(),
-  projectProofPath: z.string().optional(),
-  accessProofPath: z.string().optional(),
 });
 
 export const updateDeviceSchema = z.object({
@@ -30,36 +25,26 @@ export const updateDeviceSchema = z.object({
   userName: z.string().optional(),
   departmentId: z.string().uuid().optional(),
   unitTypeId: z.string().uuid().optional(),
-  operatingSystemId: nullableUuid,
+  operatingSystemId: z.string().uuid().optional(),
   officeId: nullableUuid,
   visioId: nullableUuid,
   projectId: nullableUuid,
   accessId: nullableUuid,
   notes: z.string().optional(),
   serialNumberProofPath: nullableString,
-  operatingSystemProofPath: nullableString,
-  officeProofPath: nullableString,
-  visioProofPath: nullableString,
-  projectProofPath: nullableString,
-  accessProofPath: nullableString,
 });
 
 export const reassignDeviceSchema = z.object({
   userName: z.string().min(1, "Nama user wajib diisi"),
   departmentId: z.string().uuid().optional(),
   unitTypeId: z.string().uuid().optional(),
-  operatingSystemId: nullableUuid,
+  operatingSystemId: z.string().uuid(),
   officeId: nullableUuid,
   visioId: nullableUuid,
   projectId: nullableUuid,
   accessId: nullableUuid,
   reassignmentNote: z.string().optional(),
   serialNumberProofPath: nullableString,
-  operatingSystemProofPath: nullableString,
-  officeProofPath: nullableString,
-  visioProofPath: nullableString,
-  projectProofPath: nullableString,
-  accessProofPath: nullableString,
 });
 
 export const deviceFilterSchema = z.object({

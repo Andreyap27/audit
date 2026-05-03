@@ -50,6 +50,7 @@ import {
   useMicrosoftSoftware,
 } from "@/hooks/use-master";
 import { EvidenceUploadField } from "@/components/devices/evidence-upload-field";
+import { LicenseCombobox } from "@/components/devices/license-combobox";
 import { useGlobalModal } from "@/lib/global-modal";
 
 type DeviceFormState = {
@@ -63,11 +64,6 @@ type DeviceFormState = {
   projectId: string;
   accessId: string;
   serialNumberProofPath: string;
-  operatingSystemProofPath: string;
-  officeProofPath: string;
-  visioProofPath: string;
-  projectProofPath: string;
-  accessProofPath: string;
 };
 
 export default function EditDevicePage() {
@@ -102,11 +98,6 @@ export default function EditDevicePage() {
     projectId: "",
     accessId: "",
     serialNumberProofPath: "",
-    operatingSystemProofPath: "",
-    officeProofPath: "",
-    visioProofPath: "",
-    projectProofPath: "",
-    accessProofPath: "",
   });
 
   useEffect(() => {
@@ -122,18 +113,12 @@ export default function EditDevicePage() {
       projectId: device.projectId ?? "none",
       accessId: device.accessId ?? "none",
       serialNumberProofPath: device.serialNumberProofPath ?? "",
-      operatingSystemProofPath: device.operatingSystemProofPath ?? "",
-      officeProofPath: device.officeProofPath ?? "",
-      visioProofPath: device.visioProofPath ?? "",
-      projectProofPath: device.projectProofPath ?? "",
-      accessProofPath: device.accessProofPath ?? "",
     });
   }, [device]);
 
   const setFormField = (k: keyof DeviceFormState, v: string) =>
     setForm((prev) => ({ ...prev, [k]: v }));
 
-  // "" = not yet loaded (skip), "none" = explicitly cleared (null), uuid = set
   const normalizeId = (value: string): string | null | undefined => {
     if (!value || value === "") return undefined;
     if (value === "none") return null;
@@ -142,6 +127,10 @@ export default function EditDevicePage() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (!form.operatingSystemId || form.operatingSystemId === "none") {
+      modal.error({ title: "Operating System wajib dipilih" });
+      return;
+    }
     try {
       await updateMutation.mutateAsync({
         serialNumber: form.serialNumber,
@@ -154,11 +143,6 @@ export default function EditDevicePage() {
         projectId: normalizeId(form.projectId),
         accessId: normalizeId(form.accessId),
         serialNumberProofPath: form.serialNumberProofPath || undefined,
-        operatingSystemProofPath: form.operatingSystemProofPath || undefined,
-        officeProofPath: form.officeProofPath || undefined,
-        visioProofPath: form.visioProofPath || undefined,
-        projectProofPath: form.projectProofPath || undefined,
-        accessProofPath: form.accessProofPath || undefined,
       });
       modal.success({ title: "Device berhasil diperbarui" });
     } catch {
@@ -307,41 +291,23 @@ export default function EditDevicePage() {
         <Card>
           <CardHeader>
             <CardTitle>Operating System</CardTitle>
+            <CardDescription>
+              Pilih lisensi OS dari master data. Bukti lisensi dikelola di Master OS.
+            </CardDescription>
           </CardHeader>
           <CardContent>
             <FieldGroup className="grid gap-4 md:grid-cols-2">
               <Field>
-                <FieldLabel>Versi OS</FieldLabel>
-                <Select
+                <FieldLabel>Versi OS *</FieldLabel>
+                <LicenseCombobox
+                  options={(osList ?? []).map((os: { id: string; version: string; licenseType: string; serialNumber?: string | null }) => ({
+                    id: os.id,
+                    label: `${os.version} ${os.licenseType}`,
+                    serialNumber: os.serialNumber,
+                  }))}
                   value={form.operatingSystemId || "none"}
-                  onValueChange={(v) => setFormField("operatingSystemId", v)}
-                >
-                  <SelectTrigger>
-                    <SelectValue placeholder="Pilih versi OS" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="none">Tidak Ada</SelectItem>
-                    {(osList ?? []).map(
-                      (os: {
-                        id: string;
-                        version: string;
-                        licenseType: string;
-                      }) => (
-                        <SelectItem key={os.id} value={String(os.id)}>
-                          Windows {os.version} {os.licenseType}
-                        </SelectItem>
-                      ),
-                    )}
-                  </SelectContent>
-                </Select>
-                <EvidenceUploadField
-                  label="Operating System"
-                  value={form.operatingSystemProofPath}
-                  serialNumber={form.serialNumber}
-                  onUploaded={(path) =>
-                    setFormField("operatingSystemProofPath", path)
-                  }
-                  onError={(message) => modal.error({ title: message })}
+                  onChange={(v) => setFormField("operatingSystemId", v)}
+                  placeholder="Cari versi OS atau serial number..."
                 />
               </Field>
             </FieldGroup>
@@ -351,135 +317,62 @@ export default function EditDevicePage() {
         <Card>
           <CardHeader>
             <CardTitle>Microsoft Software</CardTitle>
+            <CardDescription>
+              Pilih lisensi dari master data. Bukti lisensi dikelola di Master Microsoft.
+            </CardDescription>
           </CardHeader>
           <CardContent>
             <FieldGroup className="grid gap-4 md:grid-cols-2">
               <Field>
                 <FieldLabel>Microsoft Office</FieldLabel>
-                <Select
+                <LicenseCombobox
+                  options={(officeList ?? []).map((o: { id: string; version: string; licenseType: string; serialNumber?: string | null }) => ({
+                    id: o.id,
+                    label: `Office ${o.version} ${o.licenseType}`,
+                    serialNumber: o.serialNumber,
+                  }))}
                   value={form.officeId || "none"}
-                  onValueChange={(v) => setFormField("officeId", v)}
-                >
-                  <SelectTrigger>
-                    <SelectValue placeholder="Office" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="none">Tidak Ada</SelectItem>
-                    {(officeList ?? []).map(
-                      (o: {
-                        id: string;
-                        version: string;
-                        licenseType: string;
-                      }) => (
-                        <SelectItem key={o.id} value={String(o.id)}>
-                          Office {o.version} {o.licenseType}
-                        </SelectItem>
-                      ),
-                    )}
-                  </SelectContent>
-                </Select>
-                <EvidenceUploadField
-                  label="Microsoft Office"
-                  value={form.officeProofPath}
-                  serialNumber={form.serialNumber}
-                  onUploaded={(path) => setFormField("officeProofPath", path)}
-                  onError={(message) => modal.error({ title: message })}
+                  onChange={(v) => setFormField("officeId", v)}
+                  placeholder="Cari Office atau serial number..."
                 />
               </Field>
               <Field>
                 <FieldLabel>Microsoft Visio</FieldLabel>
-                <Select
+                <LicenseCombobox
+                  options={(visioList ?? []).map((o: { id: string; version: string; licenseType: string; serialNumber?: string | null }) => ({
+                    id: o.id,
+                    label: `Visio ${o.version} ${o.licenseType}`,
+                    serialNumber: o.serialNumber,
+                  }))}
                   value={form.visioId || "none"}
-                  onValueChange={(v) => setFormField("visioId", v)}
-                >
-                  <SelectTrigger>
-                    <SelectValue placeholder="Visio" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="none">Tidak Ada</SelectItem>
-                    {(visioList ?? []).map(
-                      (o: {
-                        id: string;
-                        version: string;
-                        licenseType: string;
-                      }) => (
-                        <SelectItem key={o.id} value={String(o.id)}>
-                          Visio {o.version} {o.licenseType}
-                        </SelectItem>
-                      ),
-                    )}
-                  </SelectContent>
-                </Select>
-                <EvidenceUploadField
-                  label="Microsoft Visio"
-                  value={form.visioProofPath}
-                  serialNumber={form.serialNumber}
-                  onUploaded={(path) => setFormField("visioProofPath", path)}
-                  onError={(message) => modal.error({ title: message })}
+                  onChange={(v) => setFormField("visioId", v)}
+                  placeholder="Cari Visio atau serial number..."
                 />
               </Field>
               <Field>
                 <FieldLabel>Microsoft Project</FieldLabel>
-                <Select
+                <LicenseCombobox
+                  options={(projectList ?? []).map((o: { id: string; version: string; licenseType: string; serialNumber?: string | null }) => ({
+                    id: o.id,
+                    label: `Project ${o.version} ${o.licenseType}`,
+                    serialNumber: o.serialNumber,
+                  }))}
                   value={form.projectId || "none"}
-                  onValueChange={(v) => setFormField("projectId", v)}
-                >
-                  <SelectTrigger>
-                    <SelectValue placeholder="Project" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="none">Tidak Ada</SelectItem>
-                    {(projectList ?? []).map(
-                      (o: {
-                        id: string;
-                        version: string;
-                        licenseType: string;
-                      }) => (
-                        <SelectItem key={o.id} value={String(o.id)}>
-                          Project {o.version} {o.licenseType}
-                        </SelectItem>
-                      ),
-                    )}
-                  </SelectContent>
-                </Select>
-                <EvidenceUploadField
-                  label="Microsoft Project"
-                  value={form.projectProofPath}
-                  serialNumber={form.serialNumber}
-                  onUploaded={(path) => setFormField("projectProofPath", path)}
-                  onError={(message) => modal.error({ title: message })}
+                  onChange={(v) => setFormField("projectId", v)}
+                  placeholder="Cari Project atau serial number..."
                 />
               </Field>
               <Field>
                 <FieldLabel>Microsoft Access</FieldLabel>
-                <Select
+                <LicenseCombobox
+                  options={(accessList ?? []).map((o: { id: string; version: string; licenseType: string; serialNumber?: string | null }) => ({
+                    id: o.id,
+                    label: `Access ${o.version} ${o.licenseType}`,
+                    serialNumber: o.serialNumber,
+                  }))}
                   value={form.accessId || "none"}
-                  onValueChange={(v) => setFormField("accessId", v)}
-                >
-                  <SelectTrigger>
-                    <SelectValue placeholder="Access" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="none">Tidak Ada</SelectItem>
-                    {(accessList ?? []).map(
-                      (o: {
-                        id: string;
-                        version: string;
-                        licenseType: string;
-                      }) => (
-                        <SelectItem key={o.id} value={String(o.id)}>
-                          Access {o.version} {o.licenseType}
-                        </SelectItem>
-                      ),
-                    )}
-                  </SelectContent>
-                </Select>
-                <EvidenceUploadField
-                  label="Microsoft Access"
-                  value={form.accessProofPath}
-                  serialNumber={form.serialNumber}
-                  onUploaded={(path) => setFormField("accessProofPath", path)}
-                  onError={(message) => modal.error({ title: message })}
+                  onChange={(v) => setFormField("accessId", v)}
+                  placeholder="Cari Access atau serial number..."
                 />
               </Field>
             </FieldGroup>

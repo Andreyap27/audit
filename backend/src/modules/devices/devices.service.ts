@@ -7,7 +7,6 @@ const UPLOADS_DIR = path.resolve(process.cwd(), "uploads");
 
 const deleteProofFile = (relativePath: string | null) => {
   if (!relativePath) return;
-  // stored paths are like /uploads/evidence/SN-001/file.jpg
   const rel = relativePath.replace(/^\/uploads\//, "");
   const fullPath = path.join(UPLOADS_DIR, rel);
   fs.unlink(fullPath, () => undefined);
@@ -43,11 +42,6 @@ const buildHistorySnapshot = (device: {
   project: { version: string; licenseType: string } | null;
   access: { version: string; licenseType: string } | null;
   serialNumberProofPath: string | null;
-  operatingSystemProofPath: string | null;
-  officeProofPath: string | null;
-  visioProofPath: string | null;
-  projectProofPath: string | null;
-  accessProofPath: string | null;
 }) => ({
   userName: device.userName,
   departmentCode: device.department?.code,
@@ -55,11 +49,7 @@ const buildHistorySnapshot = (device: {
   unitTypeCode: device.unitType?.code,
   unitTypeName: device.unitType?.name,
   operatingSystemLabel: device.operatingSystem
-    ? labelSoftware(
-        "Windows",
-        device.operatingSystem.version,
-        device.operatingSystem.licenseType,
-      )
+    ? `${device.operatingSystem.version} ${device.operatingSystem.licenseType}`
     : null,
   officeLabel: device.office
     ? labelSoftware("Office", device.office.version, device.office.licenseType)
@@ -78,11 +68,6 @@ const buildHistorySnapshot = (device: {
     ? labelSoftware("Access", device.access.version, device.access.licenseType)
     : null,
   serialNumberProofPath: device.serialNumberProofPath,
-  operatingSystemProofPath: device.operatingSystemProofPath,
-  officeProofPath: device.officeProofPath,
-  visioProofPath: device.visioProofPath,
-  projectProofPath: device.projectProofPath,
-  accessProofPath: device.accessProofPath,
 });
 
 export const getDevices = async (filters: {
@@ -144,18 +129,13 @@ export const createDevice = async (
     userName?: string;
     departmentId: string;
     unitTypeId: string;
-    operatingSystemId?: string;
+    operatingSystemId: string;
     officeId?: string;
     visioId?: string;
     projectId?: string;
     accessId?: string;
     notes?: string;
     serialNumberProofPath?: string;
-    operatingSystemProofPath?: string;
-    officeProofPath?: string;
-    visioProofPath?: string;
-    projectProofPath?: string;
-    accessProofPath?: string;
   },
   userId: string,
 ) => {
@@ -231,13 +211,7 @@ export const deleteDevice = async (id: string, userId: string) => {
     },
   });
 
-  // Delete all associated proof files and the serial number subfolder
   deleteProofFile(existing.serialNumberProofPath);
-  deleteProofFile(existing.operatingSystemProofPath);
-  deleteProofFile(existing.officeProofPath);
-  deleteProofFile(existing.visioProofPath);
-  deleteProofFile(existing.projectProofPath);
-  deleteProofFile(existing.accessProofPath);
   deleteProofDir(existing.serialNumber);
 };
 
@@ -247,18 +221,13 @@ export const reassignDevice = async (
     userName: string;
     departmentId?: string;
     unitTypeId?: string;
-    operatingSystemId?: string | null;
+    operatingSystemId: string;
     officeId?: string | null;
     visioId?: string | null;
     projectId?: string | null;
     accessId?: string | null;
     reassignmentNote?: string;
     serialNumberProofPath?: string | null;
-    operatingSystemProofPath?: string | null;
-    officeProofPath?: string | null;
-    visioProofPath?: string | null;
-    projectProofPath?: string | null;
-    accessProofPath?: string | null;
   },
   userId: string,
 ) => {
@@ -278,17 +247,12 @@ export const reassignDevice = async (
         userName: data.userName,
         departmentId: data.departmentId,
         unitTypeId: data.unitTypeId,
-        operatingSystemId: data.operatingSystemId ?? null,
+        operatingSystemId: data.operatingSystemId,
         officeId: data.officeId ?? null,
         visioId: data.visioId ?? null,
         projectId: data.projectId ?? null,
         accessId: data.accessId ?? null,
         serialNumberProofPath: data.serialNumberProofPath ?? null,
-        operatingSystemProofPath: data.operatingSystemProofPath ?? null,
-        officeProofPath: data.officeProofPath ?? null,
-        visioProofPath: data.visioProofPath ?? null,
-        projectProofPath: data.projectProofPath ?? null,
-        accessProofPath: data.accessProofPath ?? null,
       },
       include: deviceInclude,
     });

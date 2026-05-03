@@ -3,6 +3,7 @@
 import {
   Bar,
   BarChart,
+  Cell,
   ResponsiveContainer,
   XAxis,
   YAxis,
@@ -11,15 +12,24 @@ import {
 import { useDashboardStats } from "@/hooks/use-reports";
 import { Skeleton } from "@/components/ui/skeleton";
 
+const BAR_COLORS = [
+  "var(--chart-1)",
+  "var(--chart-2)",
+  "var(--chart-3)",
+  "var(--chart-4)",
+  "var(--chart-5)",
+];
+
 export function DepartmentChart() {
   const { data: stats, isLoading } = useDashboardStats();
 
   if (isLoading) return <Skeleton className="h-[300px] w-full" />;
 
   const chartData = (stats?.byDepartment ?? []).map(
-    (d: { code: string; count: number }) => ({
+    (d: { code: string; count: number }, i: number) => ({
       name: d.code,
       total: d.count,
+      color: BAR_COLORS[i % BAR_COLORS.length],
     }),
   );
 
@@ -47,7 +57,11 @@ export function DepartmentChart() {
             borderRadius: "8px",
           }}
         />
-        <Bar dataKey="total" fill="hsl(var(--primary))" radius={[0, 4, 4, 0]} />
+        <Bar dataKey="total" radius={[0, 4, 4, 0]}>
+          {chartData.map((entry: { color: string }, index: number) => (
+            <Cell key={`cell-${index}`} fill={entry.color} />
+          ))}
+        </Bar>
       </BarChart>
     </ResponsiveContainer>
   );
