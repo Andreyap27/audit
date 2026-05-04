@@ -62,13 +62,14 @@ export function LicenseCombobox({
   };
 
   const triggerLabel = selected ? (
-    <span className="flex flex-col items-start text-left leading-tight">
-      <span className="text-sm">{selected.label}</span>
+    <span className="flex items-center gap-1.5 text-sm min-w-0 truncate">
+      <span className="truncate">{selected.label}</span>
       {selected.serialNumber && (
-        <span className="text-xs text-muted-foreground font-mono flex items-center gap-1">
-          <Key className="h-2.5 w-2.5" />
-          {selected.serialNumber}
-        </span>
+        <>
+          <span className="text-muted-foreground shrink-0">—</span>
+          <Key className="h-3 w-3 shrink-0 text-muted-foreground" />
+          <span className="font-mono text-muted-foreground truncate">{selected.serialNumber}</span>
+        </>
       )}
     </span>
   ) : (
@@ -82,7 +83,7 @@ export function LicenseCombobox({
           variant="outline"
           role="combobox"
           aria-expanded={open}
-          className="w-full justify-between h-auto min-h-9 px-3 py-2"
+          className="w-full justify-between h-9 px-3"
         >
           {triggerLabel}
           <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
@@ -126,13 +127,14 @@ export function LicenseCombobox({
                       value === option.id ? "opacity-100" : "opacity-0",
                     )}
                   />
-                  <span className="flex flex-col">
-                    <span>{option.label}</span>
+                  <span className="flex items-center gap-1.5 min-w-0">
+                    <span className="truncate">{option.label}</span>
                     {option.serialNumber && (
-                      <span className="text-xs text-muted-foreground font-mono flex items-center gap-1">
-                        <Key className="h-2.5 w-2.5" />
-                        {option.serialNumber}
-                      </span>
+                      <>
+                        <span className="text-muted-foreground shrink-0">—</span>
+                        <Key className="h-3 w-3 shrink-0 text-muted-foreground" />
+                        <span className="text-xs font-mono text-muted-foreground truncate">{option.serialNumber}</span>
+                      </>
                     )}
                   </span>
                 </CommandItem>

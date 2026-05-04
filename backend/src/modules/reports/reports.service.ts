@@ -33,6 +33,12 @@ export const getSummaryStats = async () => {
         _count: { select: { officeDevices: { where: { isActive: true } } } },
       },
     }),
+    prisma.operatingSystem.findMany({
+      where: { isActive: true },
+      include: {
+        _count: { select: { devices: { where: { isActive: true } } } },
+      },
+    }),
     prisma.microsoftSoftware.findMany({
       where: { type: "VISIO", isActive: true },
       include: {
@@ -49,12 +55,6 @@ export const getSummaryStats = async () => {
       where: { type: "ACCESS", isActive: true },
       include: {
         _count: { select: { accessDevices: { where: { isActive: true } } } },
-      },
-    }),
-    prisma.operatingSystem.findMany({
-      where: { isActive: true },
-      include: {
-        _count: { select: { devices: { where: { isActive: true } } } },
       },
     }),
     prisma.auditLog.findMany({

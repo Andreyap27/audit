@@ -10,6 +10,7 @@ import {
 } from "recharts";
 import { useDashboardStats } from "@/hooks/use-reports";
 import { Skeleton } from "@/components/ui/skeleton";
+import { PieChart as PieChartIcon } from "lucide-react";
 
 const COLORS = [
   "var(--chart-1)",
@@ -24,7 +25,7 @@ export function OfficeDistributionChart() {
 
   if (isLoading) return <Skeleton className="h-[300px] w-full" />;
 
-  const data = (stats?.byOffice ?? []).map(
+  const data = (stats?.byOffice ?? []).filter((o) => o.count > 0).map(
     (
       o: { version: string; licenseType: string; count: number },
       i: number,
@@ -34,6 +35,15 @@ export function OfficeDistributionChart() {
       color: COLORS[i % COLORS.length],
     }),
   );
+
+  if (data.length === 0) {
+    return (
+      <div className="flex h-[300px] flex-col items-center justify-center gap-2 text-muted-foreground">
+        <PieChartIcon className="h-8 w-8 opacity-40" />
+        <p className="text-sm">Belum ada data</p>
+      </div>
+    );
+  }
 
   return (
     <ResponsiveContainer width="100%" height={300}>

@@ -1,6 +1,5 @@
 import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
-import { Analytics } from "@vercel/analytics/next";
 import "./globals.css";
 import { Providers } from "@/lib/providers";
 
@@ -39,7 +38,6 @@ export default function RootLayout({
     <html lang="en" className="bg-background">
       <body className="font-sans antialiased bg-background">
         <Providers>{children}</Providers>
-        {process.env.NODE_ENV === "production" && <Analytics />}
       </body>
     </html>
   );
