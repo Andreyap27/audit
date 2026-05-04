@@ -4,7 +4,7 @@
   "private": true,
   "scripts": {
     "dev": "nodemon src/server.ts",
-    "build": "npx prisma generate && npx tsc",
+    "build": "node node_modules/prisma/build/index.js generate && node node_modules/typescript/bin/tsc",
     "start": "node dist/server.js",
     "db:generate": "prisma generate",
     "db:migrate": "prisma migrate dev",
