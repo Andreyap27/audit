@@ -53,41 +53,33 @@ async function seed() {
   console.log("✅ Departments seeded");
 
   // Operating Systems
-  const osList = [
-    { name: "Windows 11 OEM", version: "11", licenseType: "OEM" },
-    { name: "Windows 11 OLP", version: "11", licenseType: "OLP" },
-    { name: "Windows 10 OEM", version: "10", licenseType: "OEM" },
-    { name: "Windows 10 OLP", version: "10", licenseType: "OLP" },
-  ];
-  for (const os of osList) {
-    await prisma.operatingSystem.upsert({
-      where: { name: os.name },
-      create: os,
-      update: {},
-    });
-  }
+  await prisma.operatingSystem.createMany({
+    data: [
+      { name: "Windows 11 OEM", version: "Windows 11", licenseType: "OEM" },
+      { name: "Windows 11 OLP", version: "Windows 11", licenseType: "OLP" },
+      { name: "Windows 10 OEM", version: "Windows 10", licenseType: "OEM" },
+      { name: "Windows 10 OLP", version: "Windows 10", licenseType: "OLP" },
+    ],
+    skipDuplicates: true,
+  });
   console.log("✅ Operating systems seeded");
 
   // Microsoft Software
-  const msSoftware = [
-    { type: "OFFICE" as const, version: "2021", licenseType: "OLP" },
-    { type: "OFFICE" as const, version: "2019", licenseType: "OLP" },
-    { type: "OFFICE" as const, version: "2016", licenseType: "OLP" },
-    { type: "OFFICE" as const, version: "365", licenseType: "Subscription" },
-    { type: "VISIO" as const, version: "2021", licenseType: "OLP" },
-    { type: "VISIO" as const, version: "2019", licenseType: "OLP" },
-    { type: "PROJECT" as const, version: "2021", licenseType: "OLP" },
-    { type: "PROJECT" as const, version: "2019", licenseType: "OLP" },
-    { type: "ACCESS" as const, version: "2021", licenseType: "OLP" },
-    { type: "ACCESS" as const, version: "2019", licenseType: "OLP" },
-  ];
-  for (const ms of msSoftware) {
-    await prisma.microsoftSoftware.upsert({
-      where: { type_version_licenseType: ms },
-      create: ms,
-      update: {},
-    });
-  }
+  await prisma.microsoftSoftware.createMany({
+    data: [
+      { type: "OFFICE", version: "2021", licenseType: "OLP" },
+      { type: "OFFICE", version: "2019", licenseType: "OLP" },
+      { type: "OFFICE", version: "2016", licenseType: "OLP" },
+      { type: "OFFICE", version: "365", licenseType: "SUBSCRIPTION" },
+      { type: "VISIO", version: "2021", licenseType: "OLP" },
+      { type: "VISIO", version: "2019", licenseType: "OLP" },
+      { type: "PROJECT", version: "2021", licenseType: "OLP" },
+      { type: "PROJECT", version: "2019", licenseType: "OLP" },
+      { type: "ACCESS", version: "2021", licenseType: "OLP" },
+      { type: "ACCESS", version: "2019", licenseType: "OLP" },
+    ],
+    skipDuplicates: true,
+  });
   console.log("✅ Microsoft software seeded");
 
   console.log("\n🎉 Seed complete!");

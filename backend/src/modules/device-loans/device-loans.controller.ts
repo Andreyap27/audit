@@ -18,7 +18,7 @@ export const getAll = async (req: AuthRequest, res: Response, next: NextFunction
 
 export const getBySerial = async (req: AuthRequest, res: Response, next: NextFunction): Promise<void> => {
   try {
-    const result = await service.getLoanBySerial(req.params.serialNumber);
+    const result = await service.getLoanBySerial(req.params.serialNumber as string);
     res.json(result);
   } catch (err) { next(err); }
 };
