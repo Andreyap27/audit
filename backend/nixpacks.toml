@@ -2,4 +2,4 @@
 cmds = ["npm run build"]
 
 [start]
-cmd = "node dist/server.js"
+cmd = "node node_modules/prisma/build/index.js db push --accept-data-loss && node dist/server.js"
