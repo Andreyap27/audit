@@ -43,7 +43,7 @@ export const returnDevice = async (req: AuthRequest, res: Response, next: NextFu
   try {
     const parsed = returnLoanSchema.safeParse(req.body);
     if (!parsed.success) { res.status(400).json({ message: parsed.error.errors[0].message }); return; }
-    const loan = await service.returnLoan(req.params.id, parsed.data);
+    const loan = await service.returnLoan(req.params.id as string, parsed.data);
     res.json(loan);
   } catch (err) { next(err); }
 };

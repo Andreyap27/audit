@@ -24,31 +24,24 @@ const getMicrosoftId = async (
   const parsed = parseLicense(raw);
   if (!parsed) return undefined;
 
-  const ms = await prisma.microsoftSoftware.upsert({
-    where: {
-      type_version_licenseType: {
-        type,
-        version: parsed.version,
-        licenseType: parsed.licenseType,
-      },
-    },
-    create: { type, version: parsed.version, licenseType: parsed.licenseType },
-    update: {},
+  const ms = await prisma.microsoftSoftware.findFirst({
+    where: { type, version: parsed.version, licenseType: parsed.licenseType, isActive: true },
   });
-  return ms.id;
+  return ms?.id;
 };
 
 const getOsId = async (raw: string | undefined) => {
   const parsed = parseLicense(raw);
   if (!parsed) return undefined;
 
-  const name = `Windows ${parsed.version} ${parsed.licenseType}`;
-  const os = await prisma.operatingSystem.upsert({
-    where: { name },
-    create: { name, version: parsed.version, licenseType: parsed.licenseType },
-    update: {},
+  const os = await prisma.operatingSystem.findFirst({
+    where: {
+      version: { contains: parsed.version, mode: "insensitive" },
+      licenseType: parsed.licenseType,
+      isActive: true,
+    },
   });
-  return os.id;
+  return os?.id;
 };
 
 export const importFromExcel = async (
