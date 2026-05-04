@@ -53,19 +53,28 @@ export const getSummaryStats = async () => {
       name: d.name,
       count: d._count.devices,
     })),
-    byOffice: byOffice.map((o) => ({
-      id: o.id,
-      version: o.version,
-      licenseType: o.licenseType,
-      count: o._count.officeDevices,
-    })),
-    byOs: byOs.map((o) => ({
-      id: o.id,
-      name: o.name,
-      version: o.version,
-      licenseType: o.licenseType,
-      count: o._count.devices,
-    })),
+    byOffice: Object.values(
+      byOffice.reduce(
+        (acc, o) => {
+          const key = `${o.version} ${o.licenseType}`;
+          if (!acc[key]) acc[key] = { version: o.version, licenseType: o.licenseType, count: 0 };
+          acc[key].count += o._count.officeDevices;
+          return acc;
+        },
+        {} as Record<string, { version: string; licenseType: string; count: number }>,
+      ),
+    ),
+    byOs: Object.values(
+      byOs.reduce(
+        (acc, o) => {
+          const key = `${o.version} ${o.licenseType}`;
+          if (!acc[key]) acc[key] = { version: o.version, licenseType: o.licenseType, count: 0 };
+          acc[key].count += o._count.devices;
+          return acc;
+        },
+        {} as Record<string, { version: string; licenseType: string; count: number }>,
+      ),
+    ),
     recentActivity,
   };
 };

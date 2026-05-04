@@ -26,7 +26,7 @@ export function OsDistributionChart() {
 
   const data = (stats?.byOs ?? []).map(
     (
-      o: { name: string; version: string; licenseType: string; count: number },
+      o: { version: string; licenseType: string; count: number },
       i: number,
     ) => ({
       name: `${o.version} ${o.licenseType}`,
