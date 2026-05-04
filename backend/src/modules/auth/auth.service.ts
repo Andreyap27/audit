@@ -4,8 +4,13 @@ import prisma from "../../config/database";
 import { env } from "../../config/env";
 import { AppError } from "../../middleware/errorHandler";
 
-export const loginService = async (email: string, password: string) => {
-  const user = await prisma.user.findUnique({ where: { email } });
+export const loginService = async (identifier: string, password: string) => {
+  const isEmail = identifier.includes("@");
+  const user = await prisma.user.findFirst({
+    where: isEmail
+      ? { email: identifier }
+      : { username: identifier },
+  });
 
   if (!user || !user.isActive) {
     throw new AppError("Invalid credentials", 401);

@@ -17,7 +17,7 @@ export const login = async (
       return;
     }
 
-    const result = await loginService(parsed.data.email, parsed.data.password);
+    const result = await loginService(parsed.data.identifier, parsed.data.password);
     res.json(result);
   } catch (err) {
     next(err);

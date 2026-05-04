@@ -19,7 +19,7 @@ export default function LoginPage() {
   const router = useRouter();
   const { login } = useAuth();
 
-  const [email, setEmail] = useState("");
+  const [identifier, setIdentifier] = useState("");
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
@@ -31,12 +31,12 @@ export default function LoginPage() {
     setError("");
 
     try {
-      await login(email, password);
+      await login(identifier, password);
       router.push("/");
     } catch (err: unknown) {
       const msg =
         (err as { response?: { data?: { message?: string } } })?.response?.data
-          ?.message || "Login gagal. Periksa email dan password.";
+          ?.message || "Login gagal. Periksa email/username dan password.";
       setError(msg);
     } finally {
       setIsLoading(false);
@@ -61,21 +61,21 @@ export default function LoginPage() {
           <CardHeader className="pb-4">
             <CardTitle className="text-lg">Masuk ke Akun</CardTitle>
             <CardDescription>
-              Gunakan email dan password yang diberikan admin
+              Gunakan email / username dan password yang diberikan admin
             </CardDescription>
           </CardHeader>
           <CardContent>
             <form onSubmit={handleSubmit} className="space-y-4">
               <FieldGroup className="space-y-4">
                 <Field>
-                  <FieldLabel>Email</FieldLabel>
+                  <FieldLabel>Email / Username</FieldLabel>
                   <Input
-                    type="email"
-                    placeholder="admin@company.com"
-                    value={email}
-                    onChange={(e) => setEmail(e.target.value)}
+                    type="text"
+                    placeholder="admin@company.com atau admin"
+                    value={identifier}
+                    onChange={(e) => setIdentifier(e.target.value)}
                     required
-                    autoComplete="email"
+                    autoComplete="username"
                     disabled={isLoading}
                   />
                 </Field>
