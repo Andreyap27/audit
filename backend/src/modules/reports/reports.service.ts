@@ -9,6 +9,9 @@ export const getSummaryStats = async () => {
     byDepartment,
     byOffice,
     byOs,
+    byVisio,
+    byProject,
+    byAccess,
     recentActivity,
   ] = await Promise.all([
     prisma.device.count({ where: { isActive: true } }),
@@ -28,6 +31,24 @@ export const getSummaryStats = async () => {
       where: { type: "OFFICE", isActive: true },
       include: {
         _count: { select: { officeDevices: { where: { isActive: true } } } },
+      },
+    }),
+    prisma.microsoftSoftware.findMany({
+      where: { type: "VISIO", isActive: true },
+      include: {
+        _count: { select: { visioDevices: { where: { isActive: true } } } },
+      },
+    }),
+    prisma.microsoftSoftware.findMany({
+      where: { type: "PROJECT", isActive: true },
+      include: {
+        _count: { select: { projectDevices: { where: { isActive: true } } } },
+      },
+    }),
+    prisma.microsoftSoftware.findMany({
+      where: { type: "ACCESS", isActive: true },
+      include: {
+        _count: { select: { accessDevices: { where: { isActive: true } } } },
       },
     }),
     prisma.operatingSystem.findMany({
@@ -70,6 +91,39 @@ export const getSummaryStats = async () => {
           const key = `${o.version} ${o.licenseType}`;
           if (!acc[key]) acc[key] = { version: o.version, licenseType: o.licenseType, count: 0 };
           acc[key].count += o._count.devices;
+          return acc;
+        },
+        {} as Record<string, { version: string; licenseType: string; count: number }>,
+      ),
+    ),
+    byVisio: Object.values(
+      byVisio.reduce(
+        (acc, o) => {
+          const key = `${o.version} ${o.licenseType}`;
+          if (!acc[key]) acc[key] = { version: o.version, licenseType: o.licenseType, count: 0 };
+          acc[key].count += o._count.visioDevices;
+          return acc;
+        },
+        {} as Record<string, { version: string; licenseType: string; count: number }>,
+      ),
+    ),
+    byProject: Object.values(
+      byProject.reduce(
+        (acc, o) => {
+          const key = `${o.version} ${o.licenseType}`;
+          if (!acc[key]) acc[key] = { version: o.version, licenseType: o.licenseType, count: 0 };
+          acc[key].count += o._count.projectDevices;
+          return acc;
+        },
+        {} as Record<string, { version: string; licenseType: string; count: number }>,
+      ),
+    ),
+    byAccess: Object.values(
+      byAccess.reduce(
+        (acc, o) => {
+          const key = `${o.version} ${o.licenseType}`;
+          if (!acc[key]) acc[key] = { version: o.version, licenseType: o.licenseType, count: 0 };
+          acc[key].count += o._count.accessDevices;
           return acc;
         },
         {} as Record<string, { version: string; licenseType: string; count: number }>,

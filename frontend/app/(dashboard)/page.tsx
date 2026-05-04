@@ -12,6 +12,9 @@ import { Monitor, Laptop, Server, Activity } from "lucide-react";
 import { DepartmentChart } from "@/components/dashboard/department-chart";
 import { OsDistributionChart } from "@/components/dashboard/os-distribution-chart";
 import { OfficeDistributionChart } from "@/components/dashboard/office-distribution-chart";
+import { VisioDistributionChart } from "@/components/dashboard/visio-distribution-chart";
+import { ProjectDistributionChart } from "@/components/dashboard/project-distribution-chart";
+import { AccessDistributionChart } from "@/components/dashboard/access-distribution-chart";
 import { RecentActivityTable } from "@/components/dashboard/recent-activity-table";
 import { useDashboardStats } from "@/hooks/use-reports";
 
@@ -84,7 +87,7 @@ export default function DashboardPage() {
         ))}
       </div>
 
-      {/* Charts Row */}
+      {/* Charts Row 1 */}
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
         <Card className="lg:col-span-1">
           <CardHeader>
@@ -113,6 +116,37 @@ export default function DashboardPage() {
           </CardHeader>
           <CardContent>
             <OfficeDistributionChart />
+          </CardContent>
+        </Card>
+      </div>
+
+      {/* Charts Row 2 */}
+      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+        <Card>
+          <CardHeader>
+            <CardTitle>Distribusi Visio</CardTitle>
+            <CardDescription>Versi Microsoft Visio</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <VisioDistributionChart />
+          </CardContent>
+        </Card>
+        <Card>
+          <CardHeader>
+            <CardTitle>Distribusi Project</CardTitle>
+            <CardDescription>Versi Microsoft Project</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <ProjectDistributionChart />
+          </CardContent>
+        </Card>
+        <Card>
+          <CardHeader>
+            <CardTitle>Distribusi Access</CardTitle>
+            <CardDescription>Versi Microsoft Access</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <AccessDistributionChart />
           </CardContent>
         </Card>
       </div>
