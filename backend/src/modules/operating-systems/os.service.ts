@@ -3,6 +3,7 @@ import { AppError } from "../../middleware/errorHandler";
 
 export const getAll = async () =>
   prisma.operatingSystem.findMany({
+    where: { isActive: true },
     include: { _count: { select: { devices: true } } },
     orderBy: [{ version: "asc" }, { licenseType: "asc" }],
   });
@@ -44,8 +45,16 @@ export const update = async (
 };
 
 export const remove = async (id: string) => {
-  const os = await prisma.operatingSystem.findUnique({ where: { id } });
+  const os = await prisma.operatingSystem.findUnique({
+    where: { id },
+    include: { _count: { select: { devices: true } } },
+  });
   if (!os) throw new AppError("Operating system not found", 404);
+  if (os._count.devices > 0)
+    throw new AppError(
+      `OS masih digunakan oleh ${os._count.devices} perangkat`,
+      400,
+    );
   return prisma.operatingSystem.update({
     where: { id },
     data: { isActive: false },

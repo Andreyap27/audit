@@ -79,20 +79,23 @@ export default function DevicesPage() {
   const [osFilter, setOsFilter] = useState("all");
   const [officeFilter, setOfficeFilter] = useState("all");
   const [page, setPage] = useState(1);
-  const [preview, setPreview] = useState<{ title: string; path: string | null } | null>(null);
+  const [preview, setPreview] = useState<{ title: string; paths: string[]; idx: number } | null>(null);
   const [previewText, setPreviewText] = useState<string | null>(null);
   const modal = useGlobalModal();
 
+  const currentPath = preview && preview.paths.length > 0 ? preview.paths[preview.idx] : null;
+
   useEffect(() => {
-    if (!preview?.path || /\.(png|jpg|jpeg|gif|webp)$/i.test(preview.path)) {
+    if (!currentPath || /\.(png|jpg|jpeg|gif|webp)$/i.test(currentPath)) {
       setPreviewText(null);
       return;
     }
-    fetch(`${FILE_BASE_URL}${preview.path}`)
+    setPreviewText(null);
+    fetch(`${FILE_BASE_URL}${currentPath}`)
       .then((r) => r.text())
       .then(setPreviewText)
       .catch(() => setPreviewText("Gagal memuat konten file."));
-  }, [preview]);
+  }, [currentPath]);
 
   const resetFilters = () => {
     setSearch("");
@@ -159,15 +162,15 @@ export default function DevicesPage() {
   const renderProofText = (
     label: string,
     value: string,
-    proofPath: string | null | undefined,
+    paths: string[],
     alwaysClickable = false,
   ) => {
-    if (!proofPath && !alwaysClickable) return <span>{value}</span>;
+    if (paths.length === 0 && !alwaysClickable) return <span>{value}</span>;
     return (
       <button
         type="button"
         className="text-left underline underline-offset-2 hover:text-primary"
-        onClick={() => setPreview({ title: label, path: proofPath ?? null })}
+        onClick={() => setPreview({ title: label, paths, idx: 0 })}
       >
         {value}
       </button>
@@ -206,7 +209,7 @@ export default function DevicesPage() {
             {renderProofText(
               "Bukti Serial Number",
               row.original.serialNumber,
-              row.original.serialNumberProofPath,
+              row.original.serialNumberProofPath ? [row.original.serialNumberProofPath] : [],
               true,
             )}
           </span>
@@ -241,8 +244,7 @@ export default function DevicesPage() {
         const os = row.original.operatingSystem;
         if (!os) return <span>-</span>;
         const text = `${os.version} ${os.licenseType}`;
-        const proofPath = os.proofPaths?.[0] ?? null;
-        return renderProofText("Bukti Operating System", text, proofPath);
+        return renderProofText("Bukti Operating System", text, os.proofPaths ?? []);
       },
     },
     {
@@ -252,8 +254,7 @@ export default function DevicesPage() {
         const office = row.original.office;
         if (!office) return <span>-</span>;
         const text = `Office ${office.version} ${office.licenseType}`;
-        const proofPath = office.proofPaths?.[0] ?? null;
-        return renderProofText("Bukti Microsoft Office", text, proofPath);
+        return renderProofText("Bukti Microsoft Office", text, office.proofPaths ?? []);
       },
     },
     {
@@ -263,8 +264,7 @@ export default function DevicesPage() {
         const visio = row.original.visio;
         if (!visio) return <span>-</span>;
         const text = `Visio ${visio.version}`;
-        const proofPath = visio.proofPaths?.[0] ?? null;
-        return renderProofText("Bukti Microsoft Visio", text, proofPath);
+        return renderProofText("Bukti Microsoft Visio", text, visio.proofPaths ?? []);
       },
     },
     {
@@ -274,8 +274,7 @@ export default function DevicesPage() {
         const project = row.original.project;
         if (!project) return <span>-</span>;
         const text = `Project ${project.version}`;
-        const proofPath = project.proofPaths?.[0] ?? null;
-        return renderProofText("Bukti Microsoft Project", text, proofPath);
+        return renderProofText("Bukti Microsoft Project", text, project.proofPaths ?? []);
       },
     },
     {
@@ -285,8 +284,7 @@ export default function DevicesPage() {
         const access = row.original.access;
         if (!access) return <span>-</span>;
         const text = `Access ${access.version}`;
-        const proofPath = access.proofPaths?.[0] ?? null;
-        return renderProofText("Bukti Microsoft Access", text, proofPath);
+        return renderProofText("Bukti Microsoft Access", text, access.proofPaths ?? []);
       },
     },
     {
@@ -498,15 +496,19 @@ export default function DevicesPage() {
         <DialogContent className="max-w-3xl max-h-[90vh] flex flex-col overflow-hidden">
           <DialogHeader>
             <DialogTitle>{preview?.title}</DialogTitle>
-            <DialogDescription>Preview bukti file yang di-upload</DialogDescription>
+            <DialogDescription>
+              {preview && preview.paths.length > 1
+                ? `File ${preview.idx + 1} dari ${preview.paths.length}`
+                : "Preview bukti file yang di-upload"}
+            </DialogDescription>
           </DialogHeader>
           {preview && (
-            preview.path ? (
+            currentPath ? (
               <div className="flex min-h-0 flex-1 flex-col gap-3 overflow-hidden">
                 <div className="min-h-0 flex-1 overflow-auto rounded-md border">
-                  {/\.(png|jpg|jpeg|gif|webp)$/i.test(preview.path) ? (
+                  {/\.(png|jpg|jpeg|gif|webp)$/i.test(currentPath) ? (
                     <img
-                      src={`${FILE_BASE_URL}${preview.path}`}
+                      src={`${FILE_BASE_URL}${currentPath}`}
                       alt={preview.title}
                       className="max-h-full w-auto"
                     />
@@ -516,14 +518,41 @@ export default function DevicesPage() {
                     </pre>
                   )}
                 </div>
-                <a
-                  href={`${FILE_BASE_URL}${preview.path}`}
-                  target="_blank"
-                  rel="noreferrer"
-                  className="shrink-0 text-sm underline underline-offset-2"
-                >
-                  Buka file di tab baru
-                </a>
+                <div className="flex shrink-0 items-center justify-between gap-2">
+                  <a
+                    href={`${FILE_BASE_URL}${currentPath}`}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="text-sm underline underline-offset-2"
+                  >
+                    Buka file di tab baru
+                  </a>
+                  {preview.paths.length > 1 && (
+                    <div className="flex items-center gap-2">
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => setPreview((p) => p && { ...p, idx: p.idx - 1 })}
+                        disabled={preview.idx === 0}
+                      >
+                        <ChevronLeft className="h-4 w-4" />
+                        Prev
+                      </Button>
+                      <span className="text-xs text-muted-foreground">
+                        {preview.idx + 1} / {preview.paths.length}
+                      </span>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => setPreview((p) => p && { ...p, idx: p.idx + 1 })}
+                        disabled={preview.idx === preview.paths.length - 1}
+                      >
+                        Next
+                        <ChevronRight className="h-4 w-4" />
+                      </Button>
+                    </div>
+                  )}
+                </div>
               </div>
             ) : (
               <div className="flex flex-col items-center justify-center gap-3 py-12 text-muted-foreground">

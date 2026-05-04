@@ -122,7 +122,10 @@ export default function MicrosoftPage() {
     try {
       await deleteMut.mutateAsync(id)
       modal.success({ title: "Berhasil dihapus" })
-    } catch { modal.error({ title: "Gagal menghapus" }) }
+    } catch (err: unknown) {
+      const msg = (err as { response?: { data?: { message?: string } } })?.response?.data?.message
+      modal.error({ title: msg ?? "Gagal menghapus" })
+    }
   }
 
   const columns: ColumnDef<MsRow>[] = [

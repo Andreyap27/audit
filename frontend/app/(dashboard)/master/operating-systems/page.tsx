@@ -113,7 +113,10 @@ export default function OperatingSystemsPage() {
     try {
       await deleteMut.mutateAsync(id)
       modal.success({ title: "OS berhasil dihapus" })
-    } catch { modal.error({ title: "Gagal menghapus OS" }) }
+    } catch (err: unknown) {
+      const msg = (err as { response?: { data?: { message?: string } } })?.response?.data?.message
+      modal.error({ title: msg ?? "Gagal menghapus OS" })
+    }
   }
 
   const columns: ColumnDef<OsRow>[] = [
