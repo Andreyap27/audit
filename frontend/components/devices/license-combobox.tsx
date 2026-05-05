@@ -22,6 +22,7 @@ export type LicenseOption = {
   id: string;
   label: string;
   serialNumber?: string | null;
+  usedByDeviceId?: string | null;
 };
 
 type LicenseComboboxProps = {
@@ -30,6 +31,7 @@ type LicenseComboboxProps = {
   onChange: (value: string) => void;
   placeholder?: string;
   emptyText?: string;
+  currentDeviceId?: string;
 };
 
 export function LicenseCombobox({
@@ -38,9 +40,13 @@ export function LicenseCombobox({
   onChange,
   placeholder = "Pilih lisensi...",
   emptyText = "Tidak ada data",
+  currentDeviceId,
 }: LicenseComboboxProps) {
   const [open, setOpen] = useState(false);
   const [search, setSearch] = useState("");
+
+  const isInUse = (opt: LicenseOption) =>
+    !!opt.usedByDeviceId && opt.usedByDeviceId !== currentDeviceId;
 
   const selected = options.find((o) => o.id === value);
 
@@ -55,7 +61,8 @@ export function LicenseCombobox({
           );
         });
 
-  const handleSelect = (id: string) => {
+  const handleSelect = (id: string, inUse: boolean) => {
+    if (inUse) return;
     onChange(id === value ? "none" : id);
     setOpen(false);
     setSearch("");
@@ -105,7 +112,7 @@ export function LicenseCombobox({
             <CommandGroup>
               <CommandItem
                 value="none"
-                onSelect={() => handleSelect("none")}
+                onSelect={() => handleSelect("none", false)}
               >
                 <Check
                   className={cn(
@@ -115,30 +122,39 @@ export function LicenseCombobox({
                 />
                 <span className="text-muted-foreground">Tidak Ada</span>
               </CommandItem>
-              {filtered.map((option) => (
-                <CommandItem
-                  key={option.id}
-                  value={option.id}
-                  onSelect={() => handleSelect(option.id)}
-                >
-                  <Check
-                    className={cn(
-                      "mr-2 h-4 w-4 shrink-0",
-                      value === option.id ? "opacity-100" : "opacity-0",
+              {filtered.map((option) => {
+                const used = isInUse(option);
+                return (
+                  <CommandItem
+                    key={option.id}
+                    value={option.id}
+                    onSelect={() => handleSelect(option.id, used)}
+                    className={cn(used && "opacity-50 cursor-not-allowed")}
+                  >
+                    <Check
+                      className={cn(
+                        "mr-2 h-4 w-4 shrink-0",
+                        value === option.id ? "opacity-100" : "opacity-0",
+                      )}
+                    />
+                    <span className="flex items-center gap-1.5 min-w-0 flex-1">
+                      <span className="truncate">{option.label}</span>
+                      {option.serialNumber && (
+                        <>
+                          <span className="text-muted-foreground shrink-0">—</span>
+                          <Key className="h-3 w-3 shrink-0 text-muted-foreground" />
+                          <span className="text-xs font-mono text-muted-foreground truncate">{option.serialNumber}</span>
+                        </>
+                      )}
+                    </span>
+                    {used && (
+                      <span className="ml-2 shrink-0 rounded-full bg-destructive/10 px-2 py-0.5 text-[10px] font-medium text-destructive">
+                        Terpakai
+                      </span>
                     )}
-                  />
-                  <span className="flex items-center gap-1.5 min-w-0">
-                    <span className="truncate">{option.label}</span>
-                    {option.serialNumber && (
-                      <>
-                        <span className="text-muted-foreground shrink-0">—</span>
-                        <Key className="h-3 w-3 shrink-0 text-muted-foreground" />
-                        <span className="text-xs font-mono text-muted-foreground truncate">{option.serialNumber}</span>
-                      </>
-                    )}
-                  </span>
-                </CommandItem>
-              ))}
+                  </CommandItem>
+                );
+              })}
             </CommandGroup>
           </CommandList>
         </Command>

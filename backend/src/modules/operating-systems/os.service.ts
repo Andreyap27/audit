@@ -1,12 +1,23 @@
 import prisma from "../../config/database";
 import { AppError } from "../../middleware/errorHandler";
 
-export const getAll = async () =>
-  prisma.operatingSystem.findMany({
+export const getAll = async () => {
+  const items = await prisma.operatingSystem.findMany({
     where: { isActive: true },
-    include: { _count: { select: { devices: true } } },
+    include: {
+      devices: {
+        where: { isActive: true, category: "COMPUTER" },
+        select: { id: true },
+        take: 1,
+      },
+    },
     orderBy: [{ version: "asc" }, { licenseType: "asc" }],
   });
+  return items.map(({ devices, ...item }) => ({
+    ...item,
+    usedByDeviceId: devices[0]?.id ?? null,
+  }));
+};
 
 export const getById = async (id: string) => {
   const os = await prisma.operatingSystem.findUnique({ where: { id } });

@@ -37,7 +37,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { Switch } from "@/components/ui/switch";
-import { ArrowLeft, Save, Trash2, Shuffle, History } from "lucide-react";
+import { ArrowLeft, Save, Trash2, Shuffle, History, ScanLine } from "lucide-react";
 import {
   useDevice,
   useUpdateDevice,
@@ -52,6 +52,7 @@ import {
 } from "@/hooks/use-master";
 import { EvidenceUploadField } from "@/components/devices/evidence-upload-field";
 import { LicenseCombobox } from "@/components/devices/license-combobox";
+import { BarcodeScannerModal } from "@/components/devices/barcode-scanner-modal";
 import { useGlobalModal } from "@/lib/global-modal";
 
 type DeviceFormState = {
@@ -89,6 +90,7 @@ export default function EditDevicePage() {
   const deleteMutation = useDeleteDevice();
 
   const [showHistory, setShowHistory] = useState(false);
+  const [scannerOpen, setScannerOpen] = useState(false);
 
   const [form, setForm] = useState<DeviceFormState>({
     serialNumber: "",
@@ -232,11 +234,23 @@ export default function EditDevicePage() {
             <FieldGroup className="grid gap-4 md:grid-cols-2">
               <Field>
                 <FieldLabel>Serial Number *</FieldLabel>
-                <Input
-                  value={form.serialNumber}
-                  onChange={(e) => setFormField("serialNumber", e.target.value)}
-                  required
-                />
+                <div className="flex gap-2">
+                  <Input
+                    value={form.serialNumber}
+                    onChange={(e) => setFormField("serialNumber", e.target.value)}
+                    required
+                    className="flex-1"
+                  />
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="icon"
+                    onClick={() => setScannerOpen(true)}
+                    title="Scan Barcode / QR"
+                  >
+                    <ScanLine className="h-4 w-4" />
+                  </Button>
+                </div>
                 <EvidenceUploadField
                   label="Serial Number"
                   value={form.serialNumberProofPath}
@@ -337,14 +351,16 @@ export default function EditDevicePage() {
               <Field>
                 <FieldLabel>Versi OS *</FieldLabel>
                 <LicenseCombobox
-                  options={(osList ?? []).map((os: { id: string; version: string; licenseType: string; serialNumber?: string | null }) => ({
+                  options={(osList ?? []).map((os: { id: string; version: string; licenseType: string; serialNumber?: string | null; usedByDeviceId?: string | null }) => ({
                     id: os.id,
                     label: `${os.version} ${os.licenseType}`,
                     serialNumber: os.serialNumber,
+                    usedByDeviceId: os.usedByDeviceId,
                   }))}
                   value={form.operatingSystemId || "none"}
                   onChange={(v) => setFormField("operatingSystemId", v)}
                   placeholder="Cari versi OS atau serial number..."
+                  currentDeviceId={id}
                 />
               </Field>
             </FieldGroup>
@@ -363,53 +379,61 @@ export default function EditDevicePage() {
               <Field>
                 <FieldLabel>Microsoft Office</FieldLabel>
                 <LicenseCombobox
-                  options={(officeList ?? []).map((o: { id: string; version: string; licenseType: string; serialNumber?: string | null }) => ({
+                  options={(officeList ?? []).map((o: { id: string; version: string; licenseType: string; serialNumber?: string | null; usedByDeviceId?: string | null }) => ({
                     id: o.id,
                     label: `Office ${o.version} ${o.licenseType}`,
                     serialNumber: o.serialNumber,
+                    usedByDeviceId: o.usedByDeviceId,
                   }))}
                   value={form.officeId || "none"}
                   onChange={(v) => setFormField("officeId", v)}
                   placeholder="Cari Office atau serial number..."
+                  currentDeviceId={id}
                 />
               </Field>
               <Field>
                 <FieldLabel>Microsoft Visio</FieldLabel>
                 <LicenseCombobox
-                  options={(visioList ?? []).map((o: { id: string; version: string; licenseType: string; serialNumber?: string | null }) => ({
+                  options={(visioList ?? []).map((o: { id: string; version: string; licenseType: string; serialNumber?: string | null; usedByDeviceId?: string | null }) => ({
                     id: o.id,
                     label: `Visio ${o.version} ${o.licenseType}`,
                     serialNumber: o.serialNumber,
+                    usedByDeviceId: o.usedByDeviceId,
                   }))}
                   value={form.visioId || "none"}
                   onChange={(v) => setFormField("visioId", v)}
                   placeholder="Cari Visio atau serial number..."
+                  currentDeviceId={id}
                 />
               </Field>
               <Field>
                 <FieldLabel>Microsoft Project</FieldLabel>
                 <LicenseCombobox
-                  options={(projectList ?? []).map((o: { id: string; version: string; licenseType: string; serialNumber?: string | null }) => ({
+                  options={(projectList ?? []).map((o: { id: string; version: string; licenseType: string; serialNumber?: string | null; usedByDeviceId?: string | null }) => ({
                     id: o.id,
                     label: `Project ${o.version} ${o.licenseType}`,
                     serialNumber: o.serialNumber,
+                    usedByDeviceId: o.usedByDeviceId,
                   }))}
                   value={form.projectId || "none"}
                   onChange={(v) => setFormField("projectId", v)}
                   placeholder="Cari Project atau serial number..."
+                  currentDeviceId={id}
                 />
               </Field>
               <Field>
                 <FieldLabel>Microsoft Access</FieldLabel>
                 <LicenseCombobox
-                  options={(accessList ?? []).map((o: { id: string; version: string; licenseType: string; serialNumber?: string | null }) => ({
+                  options={(accessList ?? []).map((o: { id: string; version: string; licenseType: string; serialNumber?: string | null; usedByDeviceId?: string | null }) => ({
                     id: o.id,
                     label: `Access ${o.version} ${o.licenseType}`,
                     serialNumber: o.serialNumber,
+                    usedByDeviceId: o.usedByDeviceId,
                   }))}
                   value={form.accessId || "none"}
                   onChange={(v) => setFormField("accessId", v)}
                   placeholder="Cari Access atau serial number..."
+                  currentDeviceId={id}
                 />
               </Field>
             </FieldGroup>
@@ -426,6 +450,12 @@ export default function EditDevicePage() {
           </Button>
         </div>
       </form>
+
+      <BarcodeScannerModal
+        open={scannerOpen}
+        onOpenChange={setScannerOpen}
+        onScanned={(value) => setFormField("serialNumber", value)}
+      />
 
       <Dialog open={showHistory} onOpenChange={setShowHistory}>
         <DialogContent className="max-w-5xl">

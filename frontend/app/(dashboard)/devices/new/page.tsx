@@ -21,7 +21,7 @@ import {
 } from "@/components/ui/card";
 import { Switch } from "@/components/ui/switch";
 import { Field, FieldGroup, FieldLabel } from "@/components/ui/field";
-import { ArrowLeft, Save } from "lucide-react";
+import { ArrowLeft, Save, ScanLine } from "lucide-react";
 import { useCreateDevice, useNextAssetCode } from "@/hooks/use-devices";
 import {
   useDepartments,
@@ -31,6 +31,7 @@ import {
 } from "@/hooks/use-master";
 import { EvidenceUploadField } from "@/components/devices/evidence-upload-field";
 import { LicenseCombobox } from "@/components/devices/license-combobox";
+import { BarcodeScannerModal } from "@/components/devices/barcode-scanner-modal";
 import { useGlobalModal } from "@/lib/global-modal";
 
 export default function NewDevicePage() {
@@ -55,6 +56,7 @@ export default function NewDevicePage() {
     canBeLent: false,
   });
 
+  const [scannerOpen, setScannerOpen] = useState(false);
   const { data: nextAssetCode } = useNextAssetCode();
   const { data: departments } = useDepartments();
   const { data: unitTypes } = useUnitTypes();
@@ -137,12 +139,24 @@ export default function NewDevicePage() {
             <FieldGroup className="grid gap-4 md:grid-cols-2">
               <Field>
                 <FieldLabel>Serial Number *</FieldLabel>
-                <Input
-                  placeholder="Contoh: SN-2024-001"
-                  value={form.serialNumber}
-                  onChange={(e) => set("serialNumber", e.target.value)}
-                  required
-                />
+                <div className="flex gap-2">
+                  <Input
+                    placeholder="Contoh: SN-2024-001"
+                    value={form.serialNumber}
+                    onChange={(e) => set("serialNumber", e.target.value)}
+                    required
+                    className="flex-1"
+                  />
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="icon"
+                    onClick={() => setScannerOpen(true)}
+                    title="Scan Barcode / QR"
+                  >
+                    <ScanLine className="h-4 w-4" />
+                  </Button>
+                </div>
                 <EvidenceUploadField
                   label="Serial Number"
                   value={form.serialNumberProofPath}
@@ -234,10 +248,11 @@ export default function NewDevicePage() {
                   <Field>
                     <FieldLabel>Versi OS *</FieldLabel>
                     <LicenseCombobox
-                      options={(osList ?? []).map((os: { id: string; version: string; licenseType: string; serialNumber?: string | null }) => ({
+                      options={(osList ?? []).map((os: { id: string; version: string; licenseType: string; serialNumber?: string | null; usedByDeviceId?: string | null }) => ({
                         id: os.id,
                         label: `${os.version} ${os.licenseType}`,
                         serialNumber: os.serialNumber,
+                        usedByDeviceId: os.usedByDeviceId,
                       }))}
                       value={form.operatingSystemId}
                       onChange={(v) => set("operatingSystemId", v)}
@@ -258,10 +273,11 @@ export default function NewDevicePage() {
                   <Field>
                     <FieldLabel>Microsoft Office</FieldLabel>
                     <LicenseCombobox
-                      options={(officeList ?? []).map((o: { id: string; version: string; licenseType: string; serialNumber?: string | null }) => ({
+                      options={(officeList ?? []).map((o: { id: string; version: string; licenseType: string; serialNumber?: string | null; usedByDeviceId?: string | null }) => ({
                         id: o.id,
                         label: `Office ${o.version} ${o.licenseType}`,
                         serialNumber: o.serialNumber,
+                        usedByDeviceId: o.usedByDeviceId,
                       }))}
                       value={form.officeId}
                       onChange={(v) => set("officeId", v)}
@@ -271,10 +287,11 @@ export default function NewDevicePage() {
                   <Field>
                     <FieldLabel>Microsoft Visio</FieldLabel>
                     <LicenseCombobox
-                      options={(visioList ?? []).map((o: { id: string; version: string; licenseType: string; serialNumber?: string | null }) => ({
+                      options={(visioList ?? []).map((o: { id: string; version: string; licenseType: string; serialNumber?: string | null; usedByDeviceId?: string | null }) => ({
                         id: o.id,
                         label: `Visio ${o.version} ${o.licenseType}`,
                         serialNumber: o.serialNumber,
+                        usedByDeviceId: o.usedByDeviceId,
                       }))}
                       value={form.visioId}
                       onChange={(v) => set("visioId", v)}
@@ -284,10 +301,11 @@ export default function NewDevicePage() {
                   <Field>
                     <FieldLabel>Microsoft Project</FieldLabel>
                     <LicenseCombobox
-                      options={(projectList ?? []).map((o: { id: string; version: string; licenseType: string; serialNumber?: string | null }) => ({
+                      options={(projectList ?? []).map((o: { id: string; version: string; licenseType: string; serialNumber?: string | null; usedByDeviceId?: string | null }) => ({
                         id: o.id,
                         label: `Project ${o.version} ${o.licenseType}`,
                         serialNumber: o.serialNumber,
+                        usedByDeviceId: o.usedByDeviceId,
                       }))}
                       value={form.projectId}
                       onChange={(v) => set("projectId", v)}
@@ -297,10 +315,11 @@ export default function NewDevicePage() {
                   <Field>
                     <FieldLabel>Microsoft Access</FieldLabel>
                     <LicenseCombobox
-                      options={(accessList ?? []).map((o: { id: string; version: string; licenseType: string; serialNumber?: string | null }) => ({
+                      options={(accessList ?? []).map((o: { id: string; version: string; licenseType: string; serialNumber?: string | null; usedByDeviceId?: string | null }) => ({
                         id: o.id,
                         label: `Access ${o.version} ${o.licenseType}`,
                         serialNumber: o.serialNumber,
+                        usedByDeviceId: o.usedByDeviceId,
                       }))}
                       value={form.accessId}
                       onChange={(v) => set("accessId", v)}
@@ -323,6 +342,12 @@ export default function NewDevicePage() {
           </Button>
         </div>
       </form>
+
+      <BarcodeScannerModal
+        open={scannerOpen}
+        onOpenChange={setScannerOpen}
+        onScanned={(value) => set("serialNumber", value)}
+      />
     </div>
   );
 }

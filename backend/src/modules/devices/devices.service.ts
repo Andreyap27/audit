@@ -23,6 +23,38 @@ const generateAssetCode = async (tx?: TxClient): Promise<string> => {
 
 export const getNextAssetCode = () => generateAssetCode();
 
+const LICENSE_FIELDS = [
+  { field: "operatingSystemId", label: "OS" },
+  { field: "officeId",          label: "Microsoft Office" },
+  { field: "visioId",           label: "Microsoft Visio" },
+  { field: "projectId",         label: "Microsoft Project" },
+  { field: "accessId",          label: "Microsoft Access" },
+] as const;
+
+const checkLicenseAvailability = async (
+  tx: TxClient,
+  data: Partial<Record<string, unknown>>,
+  excludeDeviceId?: string,
+) => {
+  for (const { field, label } of LICENSE_FIELDS) {
+    const value = data[field];
+    if (!value || value === null) continue;
+    const conflict = await tx.device.findFirst({
+      where: {
+        [field]: value as string,
+        isActive: true,
+        ...(excludeDeviceId ? { id: { not: excludeDeviceId } } : {}),
+      },
+      select: { serialNumber: true },
+    });
+    if (conflict)
+      throw new AppError(
+        `Lisensi ${label} ini sudah digunakan oleh perangkat ${conflict.serialNumber}`,
+        400,
+      );
+  }
+};
+
 const UPLOADS_DIR = path.resolve(process.cwd(), "uploads");
 
 const deleteProofFile = (relativePath: string | null) => {
@@ -163,6 +195,7 @@ export const createDevice = async (
   userId: string,
 ) => {
   const device = await prisma.$transaction(async (tx) => {
+    await checkLicenseAvailability(tx, data);
     const assetCode = data.assetCode ?? await generateAssetCode(tx);
     const created = await tx.device.create({ data: { ...data, assetCode }, include: deviceInclude });
 
@@ -197,6 +230,8 @@ export const updateDevice = async (
   const existing = await prisma.device.findUnique({ where: { id } });
   if (!existing || !existing.isActive)
     throw new AppError("Device not found", 404);
+
+  await checkLicenseAvailability(prisma, data, id);
 
   const device = await prisma.device.update({
     where: { id },
