@@ -78,8 +78,8 @@ export default function EditDevicePage() {
 
   const { data: device, isLoading } = useDevice(id);
   const { data: history } = useDeviceHistory(id);
-  const { data: departments } = useDepartments();
-  const { data: unitTypes } = useUnitTypes();
+  const { data: departments, isLoading: isDeptLoading } = useDepartments();
+  const { data: unitTypes, isLoading: isUnitLoading } = useUnitTypes();
   const { data: osList } = useOperatingSystems();
   const { data: officeList } = useMicrosoftSoftware("OFFICE");
   const { data: visioList } = useMicrosoftSoftware("VISIO");
@@ -181,7 +181,7 @@ export default function EditDevicePage() {
     }
   };
 
-  if (isLoading)
+  if (isLoading || isDeptLoading || isUnitLoading)
     return (
       <div className="space-y-4">
         <Skeleton className="h-12 w-full" />
@@ -257,21 +257,19 @@ export default function EditDevicePage() {
                   label="Serial Number"
                   value={form.serialNumberProofPath}
                   serialNumber={form.serialNumber}
-                  onUploaded={(path) =>
-                    setFormField("serialNumberProofPath", path)
-                  }
+                  onUploaded={(path) => setFormField("serialNumberProofPath", path)}
                   onError={(message) => modal.error({ title: message })}
                 />
               </Field>
               <Field>
-                <FieldLabel>Nama User</FieldLabel>
-                <Input
-                  value={form.userName}
-                  onChange={(e) => setFormField("userName", e.target.value)}
-                />
+                <FieldLabel>Asset Code</FieldLabel>
+                <div className="flex h-9 items-center rounded-md border bg-muted px-3 text-sm font-mono text-muted-foreground select-none">
+                  {(device as { assetCode?: string | null })?.assetCode ?? "—"}
+                </div>
+                <p className="text-xs text-muted-foreground mt-1">Nomor otomatis, tidak dapat diubah</p>
               </Field>
               <Field>
-                <FieldLabel>Departemen</FieldLabel>
+                <FieldLabel>Departemen *</FieldLabel>
                 <Select
                   value={form.departmentId}
                   onValueChange={(v) => setFormField("departmentId", v)}
@@ -280,60 +278,58 @@ export default function EditDevicePage() {
                     <SelectValue placeholder="Pilih departemen" />
                   </SelectTrigger>
                   <SelectContent>
-                    {(departments ?? []).map(
-                      (d: { id: string; name: string }) => (
-                        <SelectItem key={d.id} value={String(d.id)}>
-                          {d.name}
-                        </SelectItem>
-                      ),
-                    )}
+                    {(departments ?? []).map((d: { id: string; name: string }) => (
+                      <SelectItem key={d.id} value={String(d.id)}>{d.name}</SelectItem>
+                    ))}
                   </SelectContent>
                 </Select>
               </Field>
-              {isComputer && (
-                <Field>
-                  <FieldLabel>Tipe Unit</FieldLabel>
-                  <Select
-                    value={form.unitTypeId}
-                    onValueChange={(v) => setFormField("unitTypeId", v)}
-                  >
-                    <SelectTrigger>
-                      <SelectValue placeholder="Pilih tipe unit" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {(unitTypes ?? []).map(
-                        (u: { id: string; name: string; slug?: string }) => (
-                          <SelectItem key={u.id} value={String(u.id)}>
-                            {u.name}
-                            {u.slug ? ` (${u.slug})` : ""}
-                          </SelectItem>
-                        ),
-                      )}
-                    </SelectContent>
-                  </Select>
-                </Field>
-              )}
-              {isComputer && (
-                <Field>
-                  <FieldLabel>Dapat Dipinjam</FieldLabel>
-                  <div className="flex items-center gap-3 h-9">
-                    <Switch
-                      checked={form.canBeLent}
-                      onCheckedChange={(v) => setFormField("canBeLent", v)}
+              {isComputer ? (
+                <>
+                  <Field>
+                    <FieldLabel>Nama User</FieldLabel>
+                    <Input
+                      placeholder="Nama pengguna perangkat"
+                      value={form.userName}
+                      onChange={(e) => setFormField("userName", e.target.value)}
                     />
-                    <span className="text-sm text-muted-foreground">
-                      {form.canBeLent ? "Ya, dapat dipinjam" : "Tidak dapat dipinjam"}
-                    </span>
-                  </div>
-                </Field>
-              )}
-              {!isComputer && (
+                  </Field>
+                  <Field>
+                    <FieldLabel>Tipe Unit</FieldLabel>
+                    <Select
+                      value={form.unitTypeId}
+                      onValueChange={(v) => setFormField("unitTypeId", v)}
+                    >
+                      <SelectTrigger>
+                        <SelectValue placeholder="Pilih tipe unit" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {(unitTypes ?? []).map((u: { id: string; code: string; name: string }) => (
+                          <SelectItem key={u.id} value={String(u.id)}>{u.name} ({u.code})</SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </Field>
+                  <Field>
+                    <FieldLabel>Dapat Dipinjam</FieldLabel>
+                    <div className="flex items-center gap-3 h-9">
+                      <Switch
+                        checked={form.canBeLent}
+                        onCheckedChange={(v) => setFormField("canBeLent", v)}
+                      />
+                      <span className="text-sm text-muted-foreground">
+                        {form.canBeLent ? "Ya, dapat dipinjam" : "Tidak dapat dipinjam"}
+                      </span>
+                    </div>
+                  </Field>
+                </>
+              ) : (
                 <Field className="md:col-span-2">
                   <FieldLabel>Keterangan</FieldLabel>
                   <Input
+                    placeholder="Contoh: Monitor 24 inch, HP LaserJet Pro..."
                     value={form.notes}
                     onChange={(e) => setFormField("notes", e.target.value)}
-                    placeholder="Contoh: Monitor 24 inch, HP LaserJet Pro..."
                   />
                 </Field>
               )}
@@ -344,9 +340,7 @@ export default function EditDevicePage() {
         {isComputer && <Card>
           <CardHeader>
             <CardTitle>Operating System</CardTitle>
-            <CardDescription>
-              Pilih lisensi OS dari master data. Bukti lisensi dikelola di Master OS.
-            </CardDescription>
+            <CardDescription>Pilih lisensi OS dari master data.</CardDescription>
           </CardHeader>
           <CardContent>
             <FieldGroup className="grid gap-4 md:grid-cols-2">
@@ -372,9 +366,7 @@ export default function EditDevicePage() {
         {isComputer && <Card>
           <CardHeader>
             <CardTitle>Microsoft Software</CardTitle>
-            <CardDescription>
-              Pilih lisensi dari master data. Bukti lisensi dikelola di Master Microsoft.
-            </CardDescription>
+            <CardDescription>Pilih lisensi dari master data.</CardDescription>
           </CardHeader>
           <CardContent>
             <FieldGroup className="grid gap-4 md:grid-cols-2">

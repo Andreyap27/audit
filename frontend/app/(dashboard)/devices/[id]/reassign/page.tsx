@@ -44,8 +44,8 @@ export default function ReassignDevicePage() {
   const modal = useGlobalModal();
 
   const { data: device, isLoading } = useDevice(id);
-  const { data: departments } = useDepartments();
-  const { data: unitTypes } = useUnitTypes();
+  const { data: departments, isLoading: isDeptLoading } = useDepartments();
+  const { data: unitTypes, isLoading: isUnitLoading } = useUnitTypes();
   const { data: osList } = useOperatingSystems();
   const { data: officeList } = useMicrosoftSoftware("OFFICE");
   const { data: visioList } = useMicrosoftSoftware("VISIO");
@@ -115,7 +115,7 @@ export default function ReassignDevicePage() {
     }
   };
 
-  if (isLoading) {
+  if (isLoading || isDeptLoading || isUnitLoading) {
     return (
       <div className="space-y-4">
         <Skeleton className="h-12 w-full" />
