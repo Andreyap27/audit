@@ -109,7 +109,7 @@ export default function ReassignDevicePage() {
         title: "Perangkat berhasil dialihkan",
         description: "History assignment sudah tercatat.",
       });
-      router.push(`/devices/${id}`);
+      router.push("/devices");
     } catch {
       modal.error({ title: "Gagal mengalihkan perangkat" });
     }

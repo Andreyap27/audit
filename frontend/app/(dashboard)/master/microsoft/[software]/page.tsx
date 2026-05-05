@@ -234,6 +234,7 @@ const { data: items, isLoading } = useMicrosoftSoftware(msType)
               <Input
                 value={form.serialNumber}
                 onChange={e => setField("serialNumber", e.target.value)}
+                onKeyDown={(e) => e.key === "Enter" && e.preventDefault()}
                 placeholder="Contoh: XXXXX-XXXXX-XXXXX-XXXXX"
                 className="font-mono"
               />

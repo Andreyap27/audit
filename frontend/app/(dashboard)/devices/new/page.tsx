@@ -144,6 +144,7 @@ export default function NewDevicePage() {
                     placeholder="Contoh: SN-2024-001"
                     value={form.serialNumber}
                     onChange={(e) => set("serialNumber", e.target.value)}
+                    onKeyDown={(e) => e.key === "Enter" && e.preventDefault()}
                     required
                     className="flex-1"
                   />

@@ -45,6 +45,7 @@ type LoanRow = {
   borrowerName: string;
   borrowedAt: string;
   returnedAt: string | null;
+  borrowPhotoPath: string | null;
   returnPhotoPath: string | null;
   note: string | null;
   status: "BORROWED" | "RETURNED";
@@ -53,6 +54,12 @@ type LoanRow = {
     unitType: { name: string } | null;
     department: { name: string } | null;
   } | null;
+};
+
+type PhotoPreview = {
+  borrowPhotoPath: string | null;
+  returnPhotoPath: string | null;
+  status: "BORROWED" | "RETURNED";
 };
 
 function buildPages(current: number, total: number): (number | "...")[] {
@@ -67,7 +74,7 @@ export default function LoansPage() {
   const [page, setPage] = useState(1);
   const [search, setSearch] = useState("");
   const [status, setStatus] = useState("all");
-  const [previewPhoto, setPreviewPhoto] = useState<string | null>(null);
+  const [previewLoan, setPreviewLoan] = useState<PhotoPreview | null>(null);
 
   const resetPage = () => setPage(1);
 
@@ -162,29 +169,39 @@ export default function LoansPage() {
     },
     {
       id: "actions",
-      header: "Aksi",
-      cell: ({ row }) => (
-        <div className="flex items-center gap-1">
-          {row.original.returnPhotoPath && (
-            <Button
-              variant="ghost"
-              size="icon"
-              title="Lihat foto bukti pengembalian"
-              onClick={() => setPreviewPhoto(row.original.returnPhotoPath!)}
-            >
-              <ImageIcon className="h-4 w-4 text-muted-foreground" />
-            </Button>
-          )}
-          {row.original.status === "BORROWED" && (
-            <Button variant="outline" size="sm" asChild>
-              <Link href="/loans/return">
-                <RotateCcw className="h-3.5 w-3.5 mr-1" />
-                Kembalikan
-              </Link>
-            </Button>
-          )}
-        </div>
-      ),
+      header: "Foto / Aksi",
+      cell: ({ row }) => {
+        const loan = row.original;
+        const hasPhoto = loan.borrowPhotoPath || loan.returnPhotoPath;
+        return (
+          <div className="flex items-center gap-1">
+            {hasPhoto && (
+              <Button
+                variant="ghost"
+                size="icon"
+                title="Lihat foto peminjaman"
+                onClick={() =>
+                  setPreviewLoan({
+                    borrowPhotoPath: loan.borrowPhotoPath,
+                    returnPhotoPath: loan.returnPhotoPath,
+                    status: loan.status,
+                  })
+                }
+              >
+                <ImageIcon className="h-4 w-4 text-muted-foreground" />
+              </Button>
+            )}
+            {loan.status === "BORROWED" && (
+              <Button variant="outline" size="sm" asChild>
+                <Link href="/loans/return">
+                  <RotateCcw className="h-3.5 w-3.5 mr-1" />
+                  Kembalikan
+                </Link>
+              </Button>
+            )}
+          </div>
+        );
+      },
     },
   ];
 
@@ -351,35 +368,72 @@ export default function LoansPage() {
         )}
       </Card>
 
-      {/* Foto bukti pengembalian dialog */}
+      {/* Foto peminjaman dialog */}
       <Dialog
-        open={!!previewPhoto}
-        onOpenChange={(o) => !o && setPreviewPhoto(null)}
+        open={!!previewLoan}
+        onOpenChange={(o) => !o && setPreviewLoan(null)}
       >
-        <DialogContent className="max-w-2xl">
+        <DialogContent className="max-w-3xl">
           <DialogHeader>
-            <DialogTitle>Bukti Pengembalian</DialogTitle>
+            <DialogTitle>Foto Peminjaman</DialogTitle>
             <DialogDescription>
-              Foto yang diupload saat pengembalian perangkat
+              {previewLoan?.status === "RETURNED"
+                ? "Foto saat dipinjam dan saat dikembalikan"
+                : "Foto saat perangkat dipinjam"}
             </DialogDescription>
           </DialogHeader>
-          {previewPhoto && (
-            <div className="flex flex-col gap-3">
-              <div className="overflow-hidden rounded-md border">
-                <img
-                  src={`${FILE_BASE_URL}${previewPhoto}`}
-                  alt="Bukti pengembalian"
-                  className="w-full object-contain max-h-[60vh]"
-                />
-              </div>
-              <a
-                href={`${FILE_BASE_URL}${previewPhoto}`}
-                target="_blank"
-                rel="noreferrer"
-                className="text-sm underline underline-offset-2"
-              >
-                Buka di tab baru
-              </a>
+          {previewLoan && (
+            <div
+              className={`grid gap-4 ${
+                previewLoan.status === "RETURNED" && previewLoan.borrowPhotoPath && previewLoan.returnPhotoPath
+                  ? "grid-cols-2"
+                  : "grid-cols-1 max-w-md mx-auto w-full"
+              }`}
+            >
+              {previewLoan.borrowPhotoPath && (
+                <div className="flex flex-col gap-2">
+                  <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">
+                    Foto Saat Dipinjam
+                  </p>
+                  <div className="overflow-hidden rounded-md border">
+                    <img
+                      src={`${FILE_BASE_URL}${previewLoan.borrowPhotoPath}`}
+                      alt="Foto saat dipinjam"
+                      className="w-full object-contain max-h-[55vh]"
+                    />
+                  </div>
+                  <a
+                    href={`${FILE_BASE_URL}${previewLoan.borrowPhotoPath}`}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="text-xs underline underline-offset-2 text-muted-foreground"
+                  >
+                    Buka di tab baru
+                  </a>
+                </div>
+              )}
+              {previewLoan.returnPhotoPath && (
+                <div className="flex flex-col gap-2">
+                  <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">
+                    Foto Saat Dikembalikan
+                  </p>
+                  <div className="overflow-hidden rounded-md border">
+                    <img
+                      src={`${FILE_BASE_URL}${previewLoan.returnPhotoPath}`}
+                      alt="Foto saat dikembalikan"
+                      className="w-full object-contain max-h-[55vh]"
+                    />
+                  </div>
+                  <a
+                    href={`${FILE_BASE_URL}${previewLoan.returnPhotoPath}`}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="text-xs underline underline-offset-2 text-muted-foreground"
+                  >
+                    Buka di tab baru
+                  </a>
+                </div>
+              )}
             </div>
           )}
         </DialogContent>

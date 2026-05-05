@@ -32,20 +32,26 @@ export function BarcodeScannerModal({
 }: BarcodeScannerModalProps) {
   const videoRef = useRef<HTMLVideoElement>(null);
   const readerRef = useRef<BrowserMultiFormatReader | null>(null);
+  // Stable refs so the scan callback never closes over stale props
+  const onScannedRef = useRef(onScanned);
+  const onOpenChangeRef = useRef(onOpenChange);
+  useEffect(() => { onScannedRef.current = onScanned; }, [onScanned]);
+  useEffect(() => { onOpenChangeRef.current = onOpenChange; }, [onOpenChange]);
+
   const [cameras, setCameras] = useState<MediaDeviceInfo[]>([]);
   const [selectedCamera, setSelectedCamera] = useState<string>("");
   const [error, setError] = useState<string | null>(null);
   const [scanning, setScanning] = useState(false);
 
+  // Load camera list when modal opens
   useEffect(() => {
     if (!open) return;
+    setError(null);
 
-    const loadCameras = async () => {
-      try {
-        const devices = await BrowserMultiFormatReader.listVideoInputDevices();
+    BrowserMultiFormatReader.listVideoInputDevices()
+      .then((devices) => {
         setCameras(devices);
         if (devices.length > 0) {
-          // Prefer back/environment camera on mobile
           const backCam = devices.find((d) =>
             /back|rear|environment/i.test(d.label),
           );
@@ -53,49 +59,72 @@ export function BarcodeScannerModal({
         } else {
           setError("Tidak ada kamera yang ditemukan");
         }
-      } catch {
-        setError("Tidak dapat mengakses kamera");
-      }
-    };
-
-    loadCameras();
+      })
+      .catch(() => setError("Tidak dapat mengakses kamera"));
   }, [open]);
 
+  // Start/restart reader when camera selection changes
   useEffect(() => {
-    if (!open || !selectedCamera || !videoRef.current) return;
+    if (!open || !selectedCamera) return;
 
-    setError(null);
-    setScanning(true);
+    // Wait for next tick so the video element is mounted
+    const timer = setTimeout(() => {
+      if (!videoRef.current) return;
 
-    const reader = new BrowserMultiFormatReader();
-    readerRef.current = reader;
+      setError(null);
+      setScanning(true);
 
-    reader
-      .decodeFromVideoDevice(selectedCamera, videoRef.current, (result, err) => {
-        if (result) {
-          const text = result.getText();
-          onScanned(text);
-          onOpenChange(false);
-        } else if (err && !(err instanceof NotFoundException)) {
-          // NotFoundException is expected when no code is in frame — ignore it
-          console.error("Scan error:", err);
-        }
-      })
-      .catch(() => {
-        setError("Gagal memulai kamera. Pastikan izin kamera sudah diberikan.");
-        setScanning(false);
-      });
+      const reader = new BrowserMultiFormatReader();
+      readerRef.current = reader;
+
+      reader
+        .decodeFromVideoDevice(
+          selectedCamera,
+          videoRef.current,
+          (result, err) => {
+            // Guard: only process if this reader is still the active one
+            if (readerRef.current !== reader) return;
+
+            if (result) {
+              // Stop scanning immediately before calling parent callbacks
+              // to prevent the callback from firing again mid-render
+              readerRef.current = null;
+              reader.reset();
+
+              const text = result.getText();
+              onScannedRef.current(text);
+              onOpenChangeRef.current(false);
+            } else if (err && !(err instanceof NotFoundException)) {
+              // NotFoundException fires when no code is in frame — expected, ignore
+              console.error("Scan error:", err);
+            }
+          },
+        )
+        .catch(() => {
+          if (readerRef.current === reader) {
+            setError(
+              "Gagal memulai kamera. Pastikan izin kamera sudah diberikan.",
+            );
+            setScanning(false);
+          }
+        });
+    }, 50);
 
     return () => {
-      readerRef.current?.reset();
-      readerRef.current = null;
+      clearTimeout(timer);
+      if (readerRef.current) {
+        readerRef.current.reset();
+        readerRef.current = null;
+      }
       setScanning(false);
     };
-  }, [open, selectedCamera, onScanned, onOpenChange]);
+  }, [open, selectedCamera]);
 
   const handleClose = (v: boolean) => {
-    readerRef.current?.reset();
-    readerRef.current = null;
+    if (readerRef.current) {
+      readerRef.current.reset();
+      readerRef.current = null;
+    }
     setScanning(false);
     setError(null);
     onOpenChange(v);
@@ -140,7 +169,8 @@ export function BarcodeScannerModal({
             />
             {scanning && !error && (
               <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
-                <div className="w-48 h-32 border-2 border-primary rounded-md opacity-70">
+                <div className="relative w-48 h-32">
+                  <div className="absolute inset-0 border-2 border-primary rounded-md opacity-70" />
                   <div className="absolute top-0 left-0 w-4 h-4 border-t-2 border-l-2 border-primary rounded-tl" />
                   <div className="absolute top-0 right-0 w-4 h-4 border-t-2 border-r-2 border-primary rounded-tr" />
                   <div className="absolute bottom-0 left-0 w-4 h-4 border-b-2 border-l-2 border-primary rounded-bl" />

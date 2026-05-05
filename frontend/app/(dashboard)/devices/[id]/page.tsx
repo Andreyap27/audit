@@ -158,6 +158,7 @@ export default function EditDevicePage() {
         serialNumberProofPath: form.serialNumberProofPath || undefined,
       });
       modal.success({ title: "Device berhasil diperbarui" });
+      router.push("/devices");
     } catch {
       modal.error({ title: "Gagal memperbarui device" });
     }
@@ -238,6 +239,7 @@ export default function EditDevicePage() {
                   <Input
                     value={form.serialNumber}
                     onChange={(e) => setFormField("serialNumber", e.target.value)}
+                    onKeyDown={(e) => e.key === "Enter" && e.preventDefault()}
                     required
                     className="flex-1"
                   />
