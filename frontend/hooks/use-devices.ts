@@ -27,6 +27,13 @@ export const useDevice = (id: string) =>
     enabled: !!id,
   });
 
+export const useNextAssetCode = () =>
+  useQuery({
+    queryKey: ["next-asset-code"],
+    queryFn: () => api.get("/devices/next-asset-code").then((r) => (r.data as { assetCode: string }).assetCode),
+    staleTime: 0,
+  });
+
 export const useCreateDevice = () => {
   const qc = useQueryClient();
   return useMutation({

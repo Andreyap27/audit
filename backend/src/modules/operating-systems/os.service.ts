@@ -47,12 +47,12 @@ export const update = async (
 export const remove = async (id: string) => {
   const os = await prisma.operatingSystem.findUnique({
     where: { id },
-    include: { _count: { select: { devices: true } } },
+    include: { _count: { select: { devices: { where: { isActive: true } } } } },
   });
   if (!os) throw new AppError("Operating system not found", 404);
   if (os._count.devices > 0)
     throw new AppError(
-      `OS masih digunakan oleh ${os._count.devices} perangkat`,
+      `OS masih digunakan oleh ${os._count.devices} perangkat aktif`,
       400,
     );
   return prisma.operatingSystem.update({

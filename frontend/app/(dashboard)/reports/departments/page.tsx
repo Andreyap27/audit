@@ -9,6 +9,8 @@ type DeptReport = {
   dept: string;
   deptName: string;
   total: number;
+  computer: number;
+  hardware: number;
   nb: number;
   ws: number;
   office: number;
@@ -28,11 +30,13 @@ const columns: ColumnDef<DeptReport>[] = [
   { accessorKey: "deptName", header: "Departemen" },
   {
     accessorKey: "total",
-    header: "Total Device",
+    header: "Total",
     cell: ({ row }) => (
       <span className="font-semibold">{row.original.total}</span>
     ),
   },
+  { accessorKey: "computer", header: "Komputer" },
+  { accessorKey: "hardware", header: "Hardware" },
   { accessorKey: "nb", header: "NB" },
   { accessorKey: "ws", header: "WS" },
   { accessorKey: "office", header: "Office" },

@@ -25,7 +25,7 @@ import {
 } from "@/components/ui/dialog"
 import { Label } from "@/components/ui/label"
 import { Plus, Pencil, Trash2, Key } from "lucide-react"
-import { useMicrosoftSoftware, useCreateMicrosoft, useUpdateMicrosoft, useDeleteMicrosoft } from "@/hooks/use-master"
+import { useMicrosoftSoftware, useCreateMicrosoft, useUpdateMicrosoft, useDeleteMicrosoft, useVersionMaster } from "@/hooks/use-master"
 import { useGlobalModal } from "@/lib/global-modal"
 import { MultiEvidenceUploadField } from "@/components/devices/multi-evidence-upload-field"
 
@@ -38,12 +38,6 @@ const LABEL_MAP: Record<MsType, string> = {
   ACCESS: "Microsoft Access",
 }
 
-const VERSION_MAP: Record<MsType, string[]> = {
-  OFFICE: ["2013", "2016", "2019", "2021", "2024", "365"],
-  VISIO: ["2013", "2016", "2019", "2021", "2024"],
-  PROJECT: ["2013", "2016", "2019", "2021", "2024"],
-  ACCESS: ["2013", "2016", "2019", "2021", "2024"],
-}
 
 type MsRow = {
   id: string
@@ -68,13 +62,12 @@ export default function MicrosoftPage() {
   const msType = TYPE_MAP[software] ?? "OFFICE"
   const label = LABEL_MAP[msType]
   const shortLabel = label.split(" ")[1]
-  const versions = VERSION_MAP[msType]
-
-  const { data: items, isLoading } = useMicrosoftSoftware(msType)
+const { data: items, isLoading } = useMicrosoftSoftware(msType)
   const createMut = useCreateMicrosoft()
   const updateMut = useUpdateMicrosoft()
   const deleteMut = useDeleteMicrosoft()
   const modal = useGlobalModal()
+  const { data: msVersions } = useVersionMaster("MICROSOFT")
 
   const [open, setOpen] = useState(false)
   const [editId, setEditId] = useState<string | null>(null)
@@ -217,10 +210,8 @@ export default function MicrosoftPage() {
                     <SelectValue placeholder="Pilih versi" />
                   </SelectTrigger>
                   <SelectContent>
-                    {versions.map(v => (
-                      <SelectItem key={v} value={v}>
-                        {shortLabel} {v}
-                      </SelectItem>
+                    {(msVersions ?? []).map(v => (
+                      <SelectItem key={v.id} value={v.name}>{shortLabel} {v.name}</SelectItem>
                     ))}
                   </SelectContent>
                 </Select>

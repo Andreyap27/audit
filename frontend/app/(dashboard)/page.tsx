@@ -8,7 +8,7 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Monitor, Laptop, Server, Activity } from "lucide-react";
+import { Monitor, Laptop, Server, Activity, HardDrive } from "lucide-react";
 import { DepartmentChart } from "@/components/dashboard/department-chart";
 import { OsDistributionChart } from "@/components/dashboard/os-distribution-chart";
 import { OfficeDistributionChart } from "@/components/dashboard/office-distribution-chart";
@@ -22,29 +22,30 @@ export default function DashboardPage() {
   const { data: stats, isLoading } = useDashboardStats();
 
   const total = stats?.totalDevices ?? 0;
+  const computer = stats?.totalComputer ?? 0;
+  const hardware = stats?.totalHardware ?? 0;
   const nb = stats?.totalNB ?? 0;
   const ws = stats?.totalWS ?? 0;
 
   const summaryCards = [
     {
-      title: "Total Device",
+      title: "Total Semua Device",
       value: total.toLocaleString(),
-      description: `${nb} NB + ${ws} WS`,
+      description: `${computer} Komputer + ${hardware} Hardware`,
       icon: Monitor,
     },
     {
-      title: "Total Notebook",
-      value: nb.toLocaleString(),
-      description:
-        total > 0 ? `${((nb / total) * 100).toFixed(1)}% dari total` : "-",
+      title: "Total Komputer (NB/WS)",
+      value: computer.toLocaleString(),
+      description: `${nb} NB + ${ws} WS`,
       icon: Laptop,
     },
     {
-      title: "Total Workstation",
-      value: ws.toLocaleString(),
+      title: "Total Hardware",
+      value: hardware.toLocaleString(),
       description:
-        total > 0 ? `${((ws / total) * 100).toFixed(1)}% dari total` : "-",
-      icon: Server,
+        total > 0 ? `${((hardware / total) * 100).toFixed(1)}% dari total` : "-",
+      icon: HardDrive,
     },
     {
       title: "Aktivitas Terbaru",

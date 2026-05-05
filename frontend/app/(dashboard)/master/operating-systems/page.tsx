@@ -24,23 +24,9 @@ import {
 } from "@/components/ui/dialog"
 import { Label } from "@/components/ui/label"
 import { Plus, Pencil, Trash2, Key } from "lucide-react"
-import { useOperatingSystems, useCreateOs, useUpdateOs, useDeleteOs } from "@/hooks/use-master"
+import { useOperatingSystems, useCreateOs, useUpdateOs, useDeleteOs, useVersionMaster } from "@/hooks/use-master"
 import { useGlobalModal } from "@/lib/global-modal"
 import { MultiEvidenceUploadField } from "@/components/devices/multi-evidence-upload-field"
-
-const OS_VERSIONS = [
-  "Windows 7",
-  "Windows 8",
-  "Windows 8.1",
-  "Windows 10",
-  "Windows 11",
-  "Ubuntu",
-  "Debian",
-  "CentOS",
-  "Red Hat",
-  "Kali Linux",
-  "Linux (Other)",
-]
 
 type OsRow = {
   id: string
@@ -65,6 +51,7 @@ export default function OperatingSystemsPage() {
   const updateMut = useUpdateOs()
   const deleteMut = useDeleteOs()
   const modal = useGlobalModal()
+  const { data: osVersions } = useVersionMaster("OS")
 
   const [open, setOpen] = useState(false)
   const [editId, setEditId] = useState<string | null>(null)
@@ -206,8 +193,8 @@ export default function OperatingSystemsPage() {
                     <SelectValue placeholder="Pilih versi OS" />
                   </SelectTrigger>
                   <SelectContent>
-                    {OS_VERSIONS.map(v => (
-                      <SelectItem key={v} value={v}>{v}</SelectItem>
+                    {(osVersions ?? []).map(v => (
+                      <SelectItem key={v.id} value={v.name}>{v.name}</SelectItem>
                     ))}
                   </SelectContent>
                 </Select>

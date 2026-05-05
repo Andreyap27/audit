@@ -4,6 +4,8 @@ import ExcelJS from "exceljs";
 export const getSummaryStats = async () => {
   const [
     totalDevices,
+    totalComputer,
+    totalHardware,
     totalNB,
     totalWS,
     byDepartment,
@@ -15,11 +17,13 @@ export const getSummaryStats = async () => {
     recentActivity,
   ] = await Promise.all([
     prisma.device.count({ where: { isActive: true } }),
+    prisma.device.count({ where: { isActive: true, category: "COMPUTER" } }),
+    prisma.device.count({ where: { isActive: true, category: "HARDWARE" } }),
     prisma.device.count({
-      where: { isActive: true, unitType: { code: "NB" } },
+      where: { isActive: true, category: "COMPUTER", unitType: { code: "NB" } },
     }),
     prisma.device.count({
-      where: { isActive: true, unitType: { code: "WS" } },
+      where: { isActive: true, category: "COMPUTER", unitType: { code: "WS" } },
     }),
     prisma.department.findMany({
       include: {
@@ -30,31 +34,51 @@ export const getSummaryStats = async () => {
     prisma.microsoftSoftware.findMany({
       where: { type: "OFFICE", isActive: true },
       include: {
-        _count: { select: { officeDevices: { where: { isActive: true } } } },
+        _count: {
+          select: {
+            officeDevices: { where: { isActive: true, category: "COMPUTER" } },
+          },
+        },
       },
     }),
     prisma.operatingSystem.findMany({
       where: { isActive: true },
       include: {
-        _count: { select: { devices: { where: { isActive: true } } } },
+        _count: {
+          select: {
+            devices: { where: { isActive: true, category: "COMPUTER" } },
+          },
+        },
       },
     }),
     prisma.microsoftSoftware.findMany({
       where: { type: "VISIO", isActive: true },
       include: {
-        _count: { select: { visioDevices: { where: { isActive: true } } } },
+        _count: {
+          select: {
+            visioDevices: { where: { isActive: true, category: "COMPUTER" } },
+          },
+        },
       },
     }),
     prisma.microsoftSoftware.findMany({
       where: { type: "PROJECT", isActive: true },
       include: {
-        _count: { select: { projectDevices: { where: { isActive: true } } } },
+        _count: {
+          select: {
+            projectDevices: { where: { isActive: true, category: "COMPUTER" } },
+          },
+        },
       },
     }),
     prisma.microsoftSoftware.findMany({
       where: { type: "ACCESS", isActive: true },
       include: {
-        _count: { select: { accessDevices: { where: { isActive: true } } } },
+        _count: {
+          select: {
+            accessDevices: { where: { isActive: true, category: "COMPUTER" } },
+          },
+        },
       },
     }),
     prisma.auditLog.findMany({
@@ -66,6 +90,8 @@ export const getSummaryStats = async () => {
 
   return {
     totalDevices,
+    totalComputer,
+    totalHardware,
     totalNB,
     totalWS,
     byDepartment: byDepartment.map((d) => ({
@@ -141,59 +167,25 @@ export const getDepartmentReport = async () => {
 
   const rows = await Promise.all(
     departments.map(async (dept) => {
-      const [total, nb, ws, office, visio, project, access] = await Promise.all(
-        [
-          prisma.device.count({
-            where: { isActive: true, departmentId: dept.id },
-          }),
-          prisma.device.count({
-            where: {
-              isActive: true,
-              departmentId: dept.id,
-              unitType: { code: "NB" },
-            },
-          }),
-          prisma.device.count({
-            where: {
-              isActive: true,
-              departmentId: dept.id,
-              unitType: { code: "WS" },
-            },
-          }),
-          prisma.device.count({
-            where: {
-              isActive: true,
-              departmentId: dept.id,
-              officeId: { not: null },
-            },
-          }),
-          prisma.device.count({
-            where: {
-              isActive: true,
-              departmentId: dept.id,
-              visioId: { not: null },
-            },
-          }),
-          prisma.device.count({
-            where: {
-              isActive: true,
-              departmentId: dept.id,
-              projectId: { not: null },
-            },
-          }),
-          prisma.device.count({
-            where: {
-              isActive: true,
-              departmentId: dept.id,
-              accessId: { not: null },
-            },
-          }),
-        ],
-      );
+      const base = { isActive: true, departmentId: dept.id };
+      const [total, computer, hardware, nb, ws, office, visio, project, access] =
+        await Promise.all([
+          prisma.device.count({ where: base }),
+          prisma.device.count({ where: { ...base, category: "COMPUTER" } }),
+          prisma.device.count({ where: { ...base, category: "HARDWARE" } }),
+          prisma.device.count({ where: { ...base, category: "COMPUTER", unitType: { code: "NB" } } }),
+          prisma.device.count({ where: { ...base, category: "COMPUTER", unitType: { code: "WS" } } }),
+          prisma.device.count({ where: { ...base, officeId: { not: null } } }),
+          prisma.device.count({ where: { ...base, visioId: { not: null } } }),
+          prisma.device.count({ where: { ...base, projectId: { not: null } } }),
+          prisma.device.count({ where: { ...base, accessId: { not: null } } }),
+        ]);
       return {
         dept: dept.code,
         deptName: dept.name,
         total,
+        computer,
+        hardware,
         nb,
         ws,
         office,
@@ -214,7 +206,7 @@ export const getSoftwareReport = async (
     const rows = await prisma.operatingSystem.findMany({
       where: { isActive: true },
       include: {
-        _count: { select: { devices: { where: { isActive: true } } } },
+        _count: { select: { devices: { where: { isActive: true, category: "COMPUTER" } } } },
       },
       orderBy: [{ version: "desc" }, { licenseType: "asc" }],
     });
@@ -241,7 +233,7 @@ export const getSoftwareReport = async (
   const rows = await prisma.microsoftSoftware.findMany({
     where: { type, isActive: true },
     include: {
-      _count: { select: { [rel]: { where: { isActive: true } } } },
+      _count: { select: { [rel]: { where: { isActive: true, category: "COMPUTER" } } } },
     },
     orderBy: [{ version: "desc" }, { licenseType: "asc" }],
   });
@@ -423,7 +415,7 @@ export const getAuditLog = async (params: {
 };
 
 export const exportToExcel = async (filters: { departmentId?: string }) => {
-  const where: Record<string, unknown> = { isActive: true };
+  const where: Record<string, unknown> = { isActive: true, category: "COMPUTER" };
   if (filters.departmentId) where.departmentId = filters.departmentId;
 
   const devices = await prisma.device.findMany({
@@ -479,7 +471,7 @@ export const exportToExcel = async (filters: { departmentId?: string }) => {
       sheet.addRow({
         no: i + 1,
         serial: d.serialNumber,
-        type: d.unitType.code,
+        type: d.unitType?.code ?? "",
         user: d.userName || "",
         dept: d.department.code,
         windows: d.operatingSystem

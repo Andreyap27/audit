@@ -82,6 +82,30 @@ async function seed() {
   });
   console.log("✅ Microsoft software seeded");
 
+  // Version Master
+  const osVersions = [
+    "Windows 7", "Windows 8", "Windows 8.1", "Windows 10", "Windows 11",
+    "Ubuntu 20.04", "Ubuntu 22.04", "Ubuntu 24.04",
+    "Debian", "CentOS", "Red Hat", "Kali Linux",
+  ];
+  const msVersions = ["2013", "2016", "2019", "2021", "2024", "365"];
+
+  for (const name of osVersions) {
+    await prisma.versionMaster.upsert({
+      where: { category_name: { category: "OS", name } },
+      create: { category: "OS", name },
+      update: {},
+    });
+  }
+  for (const name of msVersions) {
+    await prisma.versionMaster.upsert({
+      where: { category_name: { category: "MICROSOFT", name } },
+      create: { category: "MICROSOFT", name },
+      update: {},
+    });
+  }
+  console.log("✅ Version master seeded");
+
   console.log("\n🎉 Seed complete!");
   console.log("   Login: admin@company.com / admin123");
 }

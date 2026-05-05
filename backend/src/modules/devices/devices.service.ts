@@ -1,7 +1,27 @@
 import fs from "fs";
 import path from "path";
+import { DeviceCategory, Prisma } from "@prisma/client";
 import prisma from "../../config/database";
 import { AppError } from "../../middleware/errorHandler";
+
+type TxClient = Prisma.TransactionClient;
+
+const generateAssetCode = async (tx?: TxClient): Promise<string> => {
+  const client = tx ?? prisma;
+  const last = await client.device.findFirst({
+    where: { assetCode: { startsWith: "RTS-" } },
+    orderBy: { assetCode: "desc" },
+    select: { assetCode: true },
+  });
+  let next = 1;
+  if (last?.assetCode) {
+    const num = parseInt(last.assetCode.replace("RTS-", ""), 10);
+    if (!isNaN(num)) next = num + 1;
+  }
+  return `RTS-${String(next).padStart(6, "0")}`;
+};
+
+export const getNextAssetCode = () => generateAssetCode();
 
 const UPLOADS_DIR = path.resolve(process.cwd(), "uploads");
 
@@ -71,6 +91,7 @@ const buildHistorySnapshot = (device: {
 });
 
 export const getDevices = async (filters: {
+  category?: string;
   departmentId?: string;
   unitTypeId?: string;
   operatingSystemId?: string;
@@ -127,9 +148,11 @@ export const createDevice = async (
     serialNumber: string;
     assetCode?: string;
     userName?: string;
+    category?: DeviceCategory;
+    canBeLent?: boolean;
     departmentId: string;
-    unitTypeId: string;
-    operatingSystemId: string;
+    unitTypeId?: string;
+    operatingSystemId?: string;
     officeId?: string;
     visioId?: string;
     projectId?: string;
@@ -140,7 +163,8 @@ export const createDevice = async (
   userId: string,
 ) => {
   const device = await prisma.$transaction(async (tx) => {
-    const created = await tx.device.create({ data, include: deviceInclude });
+    const assetCode = data.assetCode ?? await generateAssetCode(tx);
+    const created = await tx.device.create({ data: { ...data, assetCode }, include: deviceInclude });
 
     await tx.deviceAssignmentHistory.create({
       data: {

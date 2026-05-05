@@ -60,10 +60,10 @@ export const remove = async (id: string) => {
     include: {
       _count: {
         select: {
-          officeDevices: true,
-          visioDevices: true,
-          projectDevices: true,
-          accessDevices: true,
+          officeDevices: { where: { isActive: true } },
+          visioDevices: { where: { isActive: true } },
+          projectDevices: { where: { isActive: true } },
+          accessDevices: { where: { isActive: true } },
         },
       },
     },
@@ -76,7 +76,7 @@ export const remove = async (id: string) => {
     ms._count.accessDevices;
   if (inUse > 0)
     throw new AppError(
-      `Software masih digunakan oleh ${inUse} perangkat`,
+      `Software masih digunakan oleh ${inUse} perangkat aktif`,
       400,
     );
   return prisma.microsoftSoftware.update({

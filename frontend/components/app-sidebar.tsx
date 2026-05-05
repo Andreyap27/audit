@@ -19,6 +19,7 @@ import {
   Settings,
   ChevronRight,
   ClipboardCheck,
+  Tags,
   type LucideIcon,
 } from "lucide-react";
 
@@ -90,6 +91,7 @@ const menuItems: MenuItem[] = [
         ],
       },
       { title: "Unit Type", url: "/master/unit-types", icon: Monitor },
+      { title: "Master Versi", url: "/master/versions", icon: Tags },
     ],
   },
   {

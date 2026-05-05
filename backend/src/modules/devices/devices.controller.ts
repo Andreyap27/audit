@@ -121,6 +121,19 @@ export const reassign = async (
   }
 };
 
+export const nextAssetCode = async (
+  _req: AuthRequest,
+  res: Response,
+  next: NextFunction,
+): Promise<void> => {
+  try {
+    const code = await service.getNextAssetCode();
+    res.json({ assetCode: code });
+  } catch (err) {
+    next(err);
+  }
+};
+
 export const getHistory = async (
   req: AuthRequest,
   res: Response,

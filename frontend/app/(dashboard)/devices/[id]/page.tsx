@@ -36,6 +36,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import { Switch } from "@/components/ui/switch";
 import { ArrowLeft, Save, Trash2, Shuffle, History } from "lucide-react";
 import {
   useDevice,
@@ -64,6 +65,8 @@ type DeviceFormState = {
   projectId: string;
   accessId: string;
   serialNumberProofPath: string;
+  canBeLent: boolean;
+  notes: string;
 };
 
 export default function EditDevicePage() {
@@ -98,6 +101,8 @@ export default function EditDevicePage() {
     projectId: "",
     accessId: "",
     serialNumberProofPath: "",
+    canBeLent: false,
+    notes: "",
   });
 
   useEffect(() => {
@@ -113,11 +118,15 @@ export default function EditDevicePage() {
       projectId: device.projectId ?? "none",
       accessId: device.accessId ?? "none",
       serialNumberProofPath: device.serialNumberProofPath ?? "",
+      canBeLent: (device as { canBeLent?: boolean }).canBeLent ?? false,
+      notes: (device as { notes?: string }).notes ?? "",
     });
   }, [device]);
 
-  const setFormField = (k: keyof DeviceFormState, v: string) =>
+  const setFormField = (k: keyof DeviceFormState, v: string | boolean) =>
     setForm((prev) => ({ ...prev, [k]: v }));
+
+  const isComputer = (device as { category?: string } | undefined)?.category !== "HARDWARE";
 
   const normalizeId = (value: string): string | null | undefined => {
     if (!value || value === "") return undefined;
@@ -136,12 +145,14 @@ export default function EditDevicePage() {
         serialNumber: form.serialNumber,
         userName: form.userName || undefined,
         departmentId: form.departmentId || undefined,
-        unitTypeId: form.unitTypeId || undefined,
-        operatingSystemId: normalizeId(form.operatingSystemId),
-        officeId: normalizeId(form.officeId),
-        visioId: normalizeId(form.visioId),
-        projectId: normalizeId(form.projectId),
-        accessId: normalizeId(form.accessId),
+        unitTypeId: normalizeId(form.unitTypeId),
+        canBeLent: isComputer ? form.canBeLent : undefined,
+        notes: form.notes || undefined,
+        operatingSystemId: isComputer ? normalizeId(form.operatingSystemId) : null,
+        officeId: isComputer ? normalizeId(form.officeId) : null,
+        visioId: isComputer ? normalizeId(form.visioId) : null,
+        projectId: isComputer ? normalizeId(form.projectId) : null,
+        accessId: isComputer ? normalizeId(form.accessId) : null,
         serialNumberProofPath: form.serialNumberProofPath || undefined,
       });
       modal.success({ title: "Device berhasil diperbarui" });
@@ -263,32 +274,58 @@ export default function EditDevicePage() {
                   </SelectContent>
                 </Select>
               </Field>
-              <Field>
-                <FieldLabel>Tipe Unit</FieldLabel>
-                <Select
-                  value={form.unitTypeId}
-                  onValueChange={(v) => setFormField("unitTypeId", v)}
-                >
-                  <SelectTrigger>
-                    <SelectValue placeholder="Pilih tipe unit" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {(unitTypes ?? []).map(
-                      (u: { id: string; name: string; slug?: string }) => (
-                        <SelectItem key={u.id} value={String(u.id)}>
-                          {u.name}
-                          {u.slug ? ` (${u.slug})` : ""}
-                        </SelectItem>
-                      ),
-                    )}
-                  </SelectContent>
-                </Select>
-              </Field>
+              {isComputer && (
+                <Field>
+                  <FieldLabel>Tipe Unit</FieldLabel>
+                  <Select
+                    value={form.unitTypeId}
+                    onValueChange={(v) => setFormField("unitTypeId", v)}
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder="Pilih tipe unit" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {(unitTypes ?? []).map(
+                        (u: { id: string; name: string; slug?: string }) => (
+                          <SelectItem key={u.id} value={String(u.id)}>
+                            {u.name}
+                            {u.slug ? ` (${u.slug})` : ""}
+                          </SelectItem>
+                        ),
+                      )}
+                    </SelectContent>
+                  </Select>
+                </Field>
+              )}
+              {isComputer && (
+                <Field>
+                  <FieldLabel>Dapat Dipinjam</FieldLabel>
+                  <div className="flex items-center gap-3 h-9">
+                    <Switch
+                      checked={form.canBeLent}
+                      onCheckedChange={(v) => setFormField("canBeLent", v)}
+                    />
+                    <span className="text-sm text-muted-foreground">
+                      {form.canBeLent ? "Ya, dapat dipinjam" : "Tidak dapat dipinjam"}
+                    </span>
+                  </div>
+                </Field>
+              )}
+              {!isComputer && (
+                <Field className="md:col-span-2">
+                  <FieldLabel>Keterangan</FieldLabel>
+                  <Input
+                    value={form.notes}
+                    onChange={(e) => setFormField("notes", e.target.value)}
+                    placeholder="Contoh: Monitor 24 inch, HP LaserJet Pro..."
+                  />
+                </Field>
+              )}
             </FieldGroup>
           </CardContent>
         </Card>
 
-        <Card>
+        {isComputer && <Card>
           <CardHeader>
             <CardTitle>Operating System</CardTitle>
             <CardDescription>
@@ -312,9 +349,9 @@ export default function EditDevicePage() {
               </Field>
             </FieldGroup>
           </CardContent>
-        </Card>
+        </Card>}
 
-        <Card>
+        {isComputer && <Card>
           <CardHeader>
             <CardTitle>Microsoft Software</CardTitle>
             <CardDescription>
@@ -377,7 +414,7 @@ export default function EditDevicePage() {
               </Field>
             </FieldGroup>
           </CardContent>
-        </Card>
+        </Card>}
 
         <div className="flex justify-end gap-4">
           <Button variant="outline" asChild>

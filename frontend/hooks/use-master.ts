@@ -1,4 +1,39 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+
+// --- Version Master ---
+export const useVersionMaster = (category: "OS" | "MICROSOFT") =>
+  useQuery({
+    queryKey: ["version-master", category],
+    queryFn: () =>
+      api.get(`/version-master?category=${category}`).then((r) => r.data as { id: string; name: string }[]),
+  });
+
+export const useCreateVersion = () => {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (data: { category: string; name: string }) =>
+      api.post("/version-master", data).then((r) => r.data),
+    onSuccess: (_d, v) => qc.invalidateQueries({ queryKey: ["version-master", v.category] }),
+  });
+};
+
+export const useUpdateVersion = () => {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: ({ id, name, category }: { id: string; name: string; category: string }) =>
+      api.put(`/version-master/${id}`, { name }).then((r) => r.data),
+    onSuccess: (_d, v) => qc.invalidateQueries({ queryKey: ["version-master", v.category] }),
+  });
+};
+
+export const useDeleteVersion = () => {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: ({ id, category }: { id: string; category: string }) =>
+      api.delete(`/version-master/${id}`).then((r) => r.data),
+    onSuccess: (_d, v) => qc.invalidateQueries({ queryKey: ["version-master", v.category] }),
+  });
+};
 import api from "@/lib/api";
 
 // --- Departments ---
