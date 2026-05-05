@@ -31,7 +31,7 @@ export const useLoanBySerial = (serialNumber: string) =>
 export const useCreateLoan = () => {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: (data: { deviceId: string; borrowerName: string }) =>
+    mutationFn: (data: { deviceId: string; borrowerName: string; borrowPhotoPath: string }) =>
       api.post("/device-loans", data).then((r) => r.data),
     onSuccess: () => qc.invalidateQueries({ queryKey: ["loans"] }),
   });

@@ -4,17 +4,16 @@ import { useState, useCallback } from "react";
 import { QRScanner } from "@/components/loans/qr-scanner";
 import { StepWizard } from "@/components/loans/step-wizard";
 import { useLoanBySerial, useReturnLoan } from "@/hooks/use-loans";
-import { useUploadEvidence } from "@/hooks/use-devices";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Card, CardContent } from "@/components/ui/card";
 import { useGlobalModal } from "@/lib/global-modal";
+import { LivePhotoCapture } from "@/components/loans/live-photo-capture";
 import {
   RotateCcw,
   CheckCircle2,
   AlertCircle,
-  Upload,
   Loader2,
   ArrowLeft,
   ScanLine,
@@ -24,7 +23,6 @@ import {
   Laptop,
   KeyboardIcon,
   Search,
-  X,
 } from "lucide-react";
 import Link from "next/link";
 import { format } from "date-fns";
@@ -46,12 +44,9 @@ export default function ReturnPage() {
   const [manualInput, setManualInput] = useState("");
   const [note, setNote] = useState("");
   const [photoPath, setPhotoPath] = useState("");
-  const [photoPreview, setPhotoPreview] = useState<string | null>(null);
-  const [photoFileName, setPhotoFileName] = useState("");
   const modal = useGlobalModal();
 
   const { data: scanResult, isLoading } = useLoanBySerial(serialNumber);
-  const uploadEvidence = useUploadEvidence();
   const returnLoan = useReturnLoan();
 
   const activeLoan = scanResult?.activeLoan;
@@ -65,29 +60,6 @@ export default function ReturnPage() {
     if (!manualInput.trim()) return;
     setSerialNumber(manualInput.trim());
     setStep("confirm");
-  };
-
-  const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-    setPhotoFileName(file.name);
-    const previewUrl = URL.createObjectURL(file);
-    setPhotoPreview(previewUrl);
-    try {
-      const res = await uploadEvidence.mutateAsync({ file, serialNumber });
-      setPhotoPath(res.path);
-    } catch {
-      modal.error({ title: "Gagal upload foto, coba lagi" });
-      setPhotoPreview(null);
-      setPhotoFileName("");
-    }
-  };
-
-  const clearPhoto = () => {
-    if (photoPreview) URL.revokeObjectURL(photoPreview);
-    setPhotoPreview(null);
-    setPhotoPath("");
-    setPhotoFileName("");
   };
 
   const handleReturn = async () => {
@@ -112,7 +84,7 @@ export default function ReturnPage() {
     setSerialNumber("");
     setManualInput("");
     setNote("");
-    clearPhoto();
+    setPhotoPath("");
   };
 
   return (
@@ -276,53 +248,20 @@ export default function ReturnPage() {
                 <span className="text-sm font-semibold">Bukti Pengembalian</span>
               </div>
               <CardContent className="pt-5 space-y-5">
-                {/* Photo upload */}
+                {/* Photo capture */}
                 <div className="space-y-2">
-                  <label className="text-sm font-medium">
+                  <label className="text-sm font-medium flex items-center gap-1.5">
+                    <ImageIcon className="h-3.5 w-3.5 text-primary" />
                     Foto Kondisi Perangkat <span className="text-destructive">*</span>
                   </label>
-
-                  {photoPreview ? (
-                    <div className="space-y-2">
-                      <div className="relative overflow-hidden rounded-xl border bg-muted" style={{ aspectRatio: "4/3" }}>
-                        <img
-                          src={photoPreview}
-                          alt="Preview foto"
-                          className="h-full w-full object-cover"
-                        />
-                        {uploadEvidence.isPending && (
-                          <div className="absolute inset-0 flex flex-col items-center justify-center gap-2 bg-black/50">
-                            <Loader2 className="h-7 w-7 animate-spin text-white" />
-                            <span className="text-xs text-white">Mengupload…</span>
-                          </div>
-                        )}
-                        {photoPath && !uploadEvidence.isPending && (
-                          <div className="absolute left-2 top-2 flex items-center gap-1 rounded-full bg-emerald-500 px-2 py-0.5 text-xs font-medium text-white">
-                            <CheckCircle2 className="h-3 w-3" /> Terupload
-                          </div>
-                        )}
-                        <button
-                          type="button"
-                          onClick={clearPhoto}
-                          className="absolute right-2 top-2 flex h-7 w-7 items-center justify-center rounded-full bg-black/60 text-white transition-colors hover:bg-black/80"
-                        >
-                          <X className="h-3.5 w-3.5" />
-                        </button>
-                      </div>
-                      <p className="text-xs text-muted-foreground truncate">{photoFileName}</p>
-                    </div>
-                  ) : (
-                    <label className="group flex cursor-pointer flex-col items-center justify-center gap-3 rounded-xl border-2 border-dashed border-border bg-muted/20 p-8 transition-all hover:border-primary/50 hover:bg-primary/5">
-                      <div className="flex h-12 w-12 items-center justify-center rounded-full bg-primary/10 transition-colors group-hover:bg-primary/15">
-                        <Upload className="h-6 w-6 text-primary" />
-                      </div>
-                      <div className="text-center">
-                        <p className="text-sm font-medium">Klik untuk upload foto</p>
-                        <p className="mt-0.5 text-xs text-muted-foreground">JPG, PNG, WEBP</p>
-                      </div>
-                      <input type="file" accept="image/*" onChange={handleFileChange} className="hidden" />
-                    </label>
-                  )}
+                  <p className="text-xs text-muted-foreground">Ambil foto kondisi perangkat saat dikembalikan.</p>
+                  <LivePhotoCapture
+                    serialNumber={serialNumber}
+                    value={photoPath}
+                    onUploaded={setPhotoPath}
+                    onError={(msg) => modal.error({ title: msg })}
+                    label="Foto saat pengembalian"
+                  />
                 </div>
 
                 {/* Note */}
@@ -342,7 +281,7 @@ export default function ReturnPage() {
 
                 <Button
                   onClick={() => void handleReturn()}
-                  disabled={!photoPath || returnLoan.isPending || uploadEvidence.isPending}
+                  disabled={!photoPath || returnLoan.isPending}
                   className="w-full h-11 font-semibold"
                 >
                   {returnLoan.isPending ? (

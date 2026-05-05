@@ -27,6 +27,7 @@ export const createLoan = async (input: CreateLoanInput, userId: string) => {
     where: { id: input.deviceId, isActive: true },
   });
   if (!device) throw new AppError("Perangkat tidak ditemukan", 404);
+  if (!device.canBeLent) throw new AppError("Perangkat ini tidak dapat dipinjam", 400);
   const existingLoan = await prisma.deviceLoan.findFirst({
     where: { deviceId: input.deviceId, status: "BORROWED" },
   });
@@ -37,7 +38,12 @@ export const createLoan = async (input: CreateLoanInput, userId: string) => {
     );
   }
   return prisma.deviceLoan.create({
-    data: { deviceId: input.deviceId, borrowerName: input.borrowerName, createdBy: userId },
+    data: {
+      deviceId: input.deviceId,
+      borrowerName: input.borrowerName,
+      borrowPhotoPath: input.borrowPhotoPath,
+      createdBy: userId,
+    },
     include: { device: { include: deviceInclude } },
   });
 };

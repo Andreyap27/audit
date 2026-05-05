@@ -133,10 +133,11 @@ model DeviceLoan {
   id              String     @id @default(uuid())
   device          Device     @relation(fields: [deviceId], references: [id])
   deviceId        String
-  borrowerName    String
-  borrowedAt      DateTime   @default(now())
-  returnedAt      DateTime?
-  returnPhotoPath String?
+  borrowerName     String
+  borrowPhotoPath  String?
+  borrowedAt       DateTime   @default(now())
+  returnedAt       DateTime?
+  returnPhotoPath  String?
   note            String?
   status          LoanStatus @default(BORROWED)
   createdBy       String?

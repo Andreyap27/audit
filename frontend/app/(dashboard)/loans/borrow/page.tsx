@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useCallback, useRef } from "react";
+import { useState, useCallback } from "react";
 import { QRScanner } from "@/components/loans/qr-scanner";
 import { StepWizard } from "@/components/loans/step-wizard";
 import { useLoanBySerial, useCreateLoan } from "@/hooks/use-loans";
@@ -10,7 +10,6 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { useGlobalModal } from "@/lib/global-modal";
 import {
-  QrCode,
   CheckCircle2,
   AlertCircle,
   Loader2,
@@ -21,8 +20,10 @@ import {
   RotateCcw,
   KeyboardIcon,
   Search,
+  ImageIcon,
 } from "lucide-react";
 import Link from "next/link";
+import { LivePhotoCapture } from "@/components/loans/live-photo-capture";
 
 type Step = "scan" | "confirm" | "done";
 type ScanMode = "camera" | "manual";
@@ -39,6 +40,7 @@ export default function BorrowPage() {
   const [serialNumber, setSerialNumber] = useState("");
   const [manualInput, setManualInput] = useState("");
   const [borrowerName, setBorrowerName] = useState("");
+  const [borrowPhotoPath, setBorrowPhotoPath] = useState("");
   const modal = useGlobalModal();
 
   const { data: scanResult, isLoading: isLookingUp } = useLoanBySerial(serialNumber);
@@ -62,10 +64,15 @@ export default function BorrowPage() {
       modal.error({ title: "Perangkat sedang dipinjam orang lain" });
       return;
     }
+    if (!borrowPhotoPath) {
+      modal.error({ title: "Foto peminjaman wajib diambil terlebih dahulu" });
+      return;
+    }
     try {
       await createLoan.mutateAsync({
         deviceId: scanResult.device.id,
         borrowerName: borrowerName.trim(),
+        borrowPhotoPath,
       });
       setStep("done");
     } catch (err: unknown) {
@@ -81,6 +88,7 @@ export default function BorrowPage() {
     setSerialNumber("");
     setManualInput("");
     setBorrowerName("");
+    setBorrowPhotoPath("");
   };
 
   return (
@@ -213,29 +221,42 @@ export default function BorrowPage() {
               )}
 
               {scanResult?.device && !isLookingUp && (
-                <div className="divide-y rounded-lg border text-sm overflow-hidden">
-                  {[
-                    ["Serial Number", <span key="sn" className="font-mono font-semibold text-xs">{scanResult.device.serialNumber}</span>],
-                    ["Jenis Perangkat", <Badge key="t" variant="outline">{scanResult.device.unitType?.name ?? "—"}</Badge>],
-                    ["Departemen", scanResult.device.department?.name ?? "—"],
-                    ["Pengguna Tetap", scanResult.device.userName ?? "—"],
-                    ["Status", <Badge key="s" variant={scanResult.activeLoan ? "destructive" : "outline"}
-                      className={!scanResult.activeLoan ? "text-emerald-600 border-emerald-500 bg-emerald-50 dark:bg-emerald-950/30" : ""}>
-                      {scanResult.activeLoan ? "Sedang Dipinjam" : "Tersedia"}
-                    </Badge>],
-                  ].map(([label, value]) => (
-                    <div key={String(label)} className="flex items-center justify-between px-4 py-2.5 gap-4">
-                      <span className="text-xs text-muted-foreground">{label}</span>
-                      <span className="text-right">{value as React.ReactNode}</span>
+                <>
+                  {!(scanResult.device as { canBeLent?: boolean }).canBeLent && !scanResult.activeLoan && (
+                    <div className="mb-4 flex items-start gap-3 rounded-lg border border-destructive/30 bg-destructive/5 p-4">
+                      <AlertCircle className="h-5 w-5 shrink-0 text-destructive mt-0.5" />
+                      <div>
+                        <p className="text-sm font-semibold text-destructive">Perangkat tidak dapat dipinjam</p>
+                        <p className="text-xs text-destructive/70 mt-0.5">
+                          Perangkat ini tidak terdaftar sebagai perangkat yang dapat dipinjam.
+                        </p>
+                      </div>
                     </div>
-                  ))}
-                </div>
+                  )}
+                  <div className="divide-y rounded-lg border text-sm overflow-hidden">
+                    {[
+                      ["Serial Number", <span key="sn" className="font-mono font-semibold text-xs">{scanResult.device.serialNumber}</span>],
+                      ["Jenis Perangkat", <Badge key="t" variant="outline">{scanResult.device.unitType?.name ?? "—"}</Badge>],
+                      ["Departemen", scanResult.device.department?.name ?? "—"],
+                      ["Pengguna Tetap", scanResult.device.userName ?? "—"],
+                      ["Status", <Badge key="s" variant={scanResult.activeLoan ? "destructive" : "outline"}
+                        className={!scanResult.activeLoan ? "text-emerald-600 border-emerald-500 bg-emerald-50 dark:bg-emerald-950/30" : ""}>
+                        {scanResult.activeLoan ? "Sedang Dipinjam" : "Tersedia"}
+                      </Badge>],
+                    ].map(([label, value]) => (
+                      <div key={String(label)} className="flex items-center justify-between px-4 py-2.5 gap-4">
+                        <span className="text-xs text-muted-foreground">{label}</span>
+                        <span className="text-right">{value as React.ReactNode}</span>
+                      </div>
+                    ))}
+                  </div>
+                </>
               )}
             </CardContent>
           </Card>
 
-          {/* Borrower form — only show if device is available */}
-          {scanResult?.device && !scanResult.activeLoan && !isLookingUp && (
+          {/* Borrower form — only show if device is available and can be lent */}
+          {scanResult?.device && !scanResult.activeLoan && !isLookingUp && (scanResult.device as { canBeLent?: boolean }).canBeLent && (
             <Card className="border-primary/30">
               <div className="flex items-center gap-2 border-b bg-primary/5 px-5 py-3">
                 <UserRound className="h-4 w-4 text-primary" />
@@ -250,15 +271,29 @@ export default function BorrowPage() {
                     placeholder="Masukkan nama lengkap peminjam…"
                     value={borrowerName}
                     onChange={(e) => setBorrowerName(e.target.value)}
-                    onKeyDown={(e) => e.key === "Enter" && void handleBorrow()}
-                    autoFocus
                     className="h-10"
                   />
                   <p className="text-xs text-muted-foreground">Isi dengan nama lengkap sesuai identitas.</p>
                 </div>
+
+                <div className="space-y-2">
+                  <label className="text-sm font-medium flex items-center gap-1.5">
+                    <ImageIcon className="h-3.5 w-3.5 text-primary" />
+                    Foto Kondisi Perangkat <span className="text-destructive">*</span>
+                  </label>
+                  <p className="text-xs text-muted-foreground">Ambil foto kondisi perangkat sebelum dipinjam.</p>
+                  <LivePhotoCapture
+                    serialNumber={serialNumber}
+                    value={borrowPhotoPath}
+                    onUploaded={setBorrowPhotoPath}
+                    onError={(msg) => modal.error({ title: msg })}
+                    label="Foto sebelum pinjam"
+                  />
+                </div>
+
                 <Button
                   onClick={() => void handleBorrow()}
-                  disabled={!borrowerName.trim() || createLoan.isPending}
+                  disabled={!borrowerName.trim() || !borrowPhotoPath || createLoan.isPending}
                   className="w-full h-11 font-semibold"
                 >
                   {createLoan.isPending ? (
