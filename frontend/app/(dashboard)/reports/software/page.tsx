@@ -10,16 +10,67 @@ import { useSoftwareReport } from "@/hooks/use-reports"
 
 type MsType = "OS" | "OFFICE" | "VISIO" | "PROJECT" | "ACCESS"
 
-type SoftwareRow = { id: string; version: string; licenseType: string; count: number; percentage: number }
+type SoftwareRow = {
+  id: string
+  version: string
+  licenseType: string
+  total: number
+  used: number
+  available: number
+  percentage: number
+}
 
 const columns: ColumnDef<SoftwareRow>[] = [
-  { accessorKey: "version", header: "Nama/Versi", cell: ({ row }) => <span className="font-medium">{row.original.version}</span> },
-  { accessorKey: "licenseType", header: "Tipe Lisensi", cell: ({ row }) => <Badge variant="outline">{row.original.licenseType}</Badge> },
-  { accessorKey: "count", header: "Jumlah Device" },
+  {
+    accessorKey: "version",
+    header: "Nama/Versi",
+    cell: ({ row }) => <span className="font-medium">{row.original.version}</span>,
+  },
+  {
+    accessorKey: "licenseType",
+    header: "Tipe Lisensi",
+    cell: ({ row }) => <Badge variant="outline">{row.original.licenseType}</Badge>,
+  },
+  {
+    accessorKey: "total",
+    header: "Total Lisensi",
+    cell: ({ row }) => <span className="font-mono font-medium">{row.original.total}</span>,
+  },
+  {
+    accessorKey: "used",
+    header: "Terpakai",
+    cell: ({ row }) => (
+      <span className={`font-mono font-medium ${row.original.used > 0 ? "text-primary" : "text-muted-foreground"}`}>
+        {row.original.used}
+      </span>
+    ),
+  },
+  {
+    accessorKey: "available",
+    header: "Tersedia",
+    cell: ({ row }) => (
+      <span className={`font-mono font-medium ${row.original.available > 0 ? "text-emerald-600" : "text-muted-foreground"}`}>
+        {row.original.available}
+      </span>
+    ),
+  },
   {
     accessorKey: "percentage",
-    header: "Persentase",
-    cell: ({ row }) => <span>{row.original.percentage?.toFixed(1) ?? 0}%</span>,
+    header: "% Terpakai",
+    cell: ({ row }) => {
+      const pct = row.original.percentage
+      return (
+        <div className="flex items-center gap-2">
+          <div className="w-20 h-1.5 rounded-full bg-muted overflow-hidden">
+            <div
+              className="h-full rounded-full bg-primary"
+              style={{ width: `${Math.min(pct, 100)}%` }}
+            />
+          </div>
+          <span className="text-sm tabular-nums">{pct.toFixed(1)}%</span>
+        </div>
+      )
+    },
   },
 ]
 

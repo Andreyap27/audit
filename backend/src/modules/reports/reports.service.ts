@@ -199,6 +199,36 @@ export const getDepartmentReport = async () => {
   return rows;
 };
 
+const groupByVersionAndType = (
+  rows: { version: string; licenseType: string; used: number }[],
+) => {
+  const map = new Map<string, { version: string; licenseType: string; total: number; used: number }>();
+  for (const r of rows) {
+    const key = `${r.version}||${r.licenseType}`;
+    const existing = map.get(key);
+    if (existing) {
+      existing.total++;
+      existing.used += r.used;
+    } else {
+      map.set(key, { version: r.version, licenseType: r.licenseType, total: 1, used: r.used });
+    }
+  }
+  const grouped = [...map.values()].sort(
+    (a, b) => b.version.localeCompare(a.version) || a.licenseType.localeCompare(b.licenseType),
+  );
+  const totalLicenses = grouped.reduce((s, r) => s + r.total, 0);
+  return grouped.map((r, i) => ({
+    id: `${i}`,
+    version: r.version,
+    licenseType: r.licenseType,
+    total: r.total,
+    used: r.used,
+    available: r.total - r.used,
+    percentage: r.total > 0 ? (r.used / r.total) * 100 : 0,
+    shareOfAll: totalLicenses > 0 ? (r.total / totalLicenses) * 100 : 0,
+  }));
+};
+
 export const getSoftwareReport = async (
   type: "OFFICE" | "VISIO" | "PROJECT" | "ACCESS" | "OS",
 ) => {
@@ -208,24 +238,17 @@ export const getSoftwareReport = async (
       include: {
         _count: { select: { devices: { where: { isActive: true, category: "COMPUTER" } } } },
       },
-      orderBy: [{ version: "desc" }, { licenseType: "asc" }],
     });
-    const total = rows.reduce((s, r) => s + r._count.devices, 0);
-    return rows.map((r) => ({
-      id: r.id,
-      name: r.name,
-      version: r.version,
-      licenseType: r.licenseType,
-      count: r._count.devices,
-      percentage: total > 0 ? (r._count.devices / total) * 100 : 0,
-    }));
+    return groupByVersionAndType(
+      rows.map((r) => ({ version: r.version, licenseType: r.licenseType, used: r._count.devices })),
+    );
   }
 
   const typeMap = {
     OFFICE: { rel: "officeDevices" as const },
-    VISIO: { rel: "visioDevices" as const },
-    PROJECT: { rel: "projectDevices" as const },
-    ACCESS: { rel: "accessDevices" as const },
+    VISIO:  { rel: "visioDevices"  as const },
+    PROJECT:{ rel: "projectDevices" as const },
+    ACCESS: { rel: "accessDevices"  as const },
   };
 
   const { rel } = typeMap[type];
@@ -235,16 +258,14 @@ export const getSoftwareReport = async (
     include: {
       _count: { select: { [rel]: { where: { isActive: true, category: "COMPUTER" } } } },
     },
-    orderBy: [{ version: "desc" }, { licenseType: "asc" }],
   });
-  const total = rows.reduce((s, r) => s + (r._count as Record<string, number>)[rel], 0);
-  return rows.map((r) => ({
-    id: r.id,
-    version: r.version,
-    licenseType: r.licenseType,
-    count: (r._count as Record<string, number>)[rel],
-    percentage: total > 0 ? ((r._count as Record<string, number>)[rel] / total) * 100 : 0,
-  }));
+  return groupByVersionAndType(
+    rows.map((r) => ({
+      version: r.version,
+      licenseType: r.licenseType,
+      used: (r._count as Record<string, number>)[rel],
+    })),
+  );
 };
 
 export const getLoanReport = async (params: {
