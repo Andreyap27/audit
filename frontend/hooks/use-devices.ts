@@ -64,6 +64,15 @@ export const useDeleteDevice = () => {
   });
 };
 
+export const useReturnDeviceToGA = () => {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: ({ id, note }: { id: string; note: string }) =>
+      api.post(`/devices/${id}/return-to-ga`, { note }).then((r) => r.data),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ["devices"] }),
+  });
+};
+
 export const useUploadEvidence = () => {
   return useMutation({
     mutationFn: ({ file, serialNumber }: { file: File; serialNumber?: string }) => {

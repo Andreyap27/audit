@@ -134,6 +134,28 @@ export const nextAssetCode = async (
   }
 };
 
+export const returnToGA = async (
+  req: AuthRequest,
+  res: Response,
+  next: NextFunction,
+): Promise<void> => {
+  try {
+    const { note } = req.body as { note?: string };
+    if (!note || !note.trim()) {
+      res.status(400).json({ message: "Catatan wajib diisi sebelum dikembalikan ke GA" });
+      return;
+    }
+    const device = await service.returnDeviceToGA(
+      req.params.id as string,
+      note.trim(),
+      req.user!.id,
+    );
+    res.json(device);
+  } catch (err) {
+    next(err);
+  }
+};
+
 export const getHistory = async (
   req: AuthRequest,
   res: Response,

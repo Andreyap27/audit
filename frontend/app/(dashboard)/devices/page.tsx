@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import type { ColumnDef } from "@tanstack/react-table";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
@@ -103,6 +103,46 @@ export default function DevicesPage() {
       .then(setPreviewText)
       .catch(() => setPreviewText("Gagal memuat konten file."));
   }, [currentPath]);
+
+  const lastKeyTimeRef = useRef(0);
+  const isScanningRef = useRef(false);
+  const pendingFirstCharRef = useRef("");
+  const scanBufferRef = useRef("");
+
+  const handleSearchKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === "Enter") {
+      e.preventDefault();
+      isScanningRef.current = false;
+      pendingFirstCharRef.current = "";
+      scanBufferRef.current = "";
+      return;
+    }
+    if (e.key.length !== 1) return;
+
+    const now = Date.now();
+    const gap = now - lastKeyTimeRef.current;
+    lastKeyTimeRef.current = now;
+
+    if (isScanningRef.current) {
+      e.preventDefault();
+      scanBufferRef.current += e.key;
+      setSearch(scanBufferRef.current);
+      resetPage();
+      return;
+    }
+
+    if (gap < 50 && pendingFirstCharRef.current) {
+      isScanningRef.current = true;
+      scanBufferRef.current = pendingFirstCharRef.current + e.key;
+      pendingFirstCharRef.current = "";
+      e.preventDefault();
+      setSearch(scanBufferRef.current);
+      resetPage();
+      return;
+    }
+
+    pendingFirstCharRef.current = gap > 300 ? e.key : "";
+  };
 
   const resetFilters = () => {
     setSearch("");
@@ -462,7 +502,16 @@ export default function DevicesPage() {
                 placeholder="Cari serial number atau nama user..."
                 className="h-9 pl-8 text-sm"
                 value={search}
-                onChange={(e) => { setSearch(e.target.value); resetPage(); }}
+                onChange={(e) => {
+                  setSearch(e.target.value);
+                  resetPage();
+                  if (!e.target.value) {
+                    isScanningRef.current = false;
+                    scanBufferRef.current = "";
+                    pendingFirstCharRef.current = "";
+                  }
+                }}
+                onKeyDown={handleSearchKeyDown}
               />
             </div>
             <div className="ml-auto flex flex-wrap items-center gap-2">

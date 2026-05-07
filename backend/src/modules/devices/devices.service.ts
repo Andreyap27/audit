@@ -341,6 +341,35 @@ export const reassignDevice = async (
   return updated;
 };
 
+export const returnDeviceToGA = async (
+  id: string,
+  note: string,
+  userId: string,
+) => {
+  const existing = await prisma.device.findUnique({ where: { id } });
+  if (!existing || !existing.isActive)
+    throw new AppError("Device not found", 404);
+
+  const device = await prisma.device.update({
+    where: { id },
+    data: { isActive: false, returnedToGAAt: new Date(), returnedToGANote: note },
+  });
+
+  await prisma.auditLog.create({
+    data: {
+      action: "UPDATE",
+      tableName: "devices",
+      recordId: id,
+      oldData: existing as unknown as object,
+      newData: device as unknown as object,
+      userId,
+    },
+  });
+
+  deleteProofDir(existing.serialNumber);
+  return device;
+};
+
 export const getDeviceAssignmentHistory = async (deviceId: string) => {
   const device = await prisma.device.findUnique({ where: { id: deviceId } });
   if (!device) throw new AppError("Device not found", 404);
