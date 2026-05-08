@@ -4,7 +4,9 @@ import { z } from "zod";
 import { exportToExcel } from "../reports/reports.service";
 
 const exportFilterSchema = z.object({
-  departmentId: z.string().uuid().optional(),
+  departmentId: z
+    .union([z.string().min(1), z.array(z.string().min(1))])
+    .optional(),
 });
 
 export const exportExcel = async (

@@ -19,10 +19,14 @@ import {
   Dialog,
   DialogContent,
   DialogDescription,
+  DialogFooter,
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
+import { ScrollArea } from "@/components/ui/scroll-area";
+import { Textarea } from "@/components/ui/textarea";
 import { DataTable } from "@/components/ui/data-table";
+import { Checkbox } from "@/components/ui/checkbox";
 import Barcode from "react-barcode";
 import {
   Plus,
@@ -37,8 +41,9 @@ import {
   FileQuestion,
   CheckCircle2,
   XCircle,
+  PackageX,
 } from "lucide-react";
-import { useDevices, useDeleteDevice } from "@/hooks/use-devices";
+import { useDevices, useDeleteDevice, useReturnDeviceToGA } from "@/hooks/use-devices";
 import {
   useDepartments,
   useUnitTypes,
@@ -88,6 +93,11 @@ export default function DevicesPage() {
   const [page, setPage] = useState(1);
   const [preview, setPreview] = useState<{ title: string; paths: string[]; idx: number } | null>(null);
   const [previewText, setPreviewText] = useState<string | null>(null);
+  const [returnToGATarget, setReturnToGATarget] = useState<{ id: string; serialNumber: string } | null>(null);
+  const [returnToGANote, setReturnToGANote] = useState("");
+  const [exportDialogOpen, setExportDialogOpen] = useState(false);
+  const [exportAll, setExportAll] = useState(true);
+  const [exportDeptIds, setExportDeptIds] = useState<string[]>([]);
   const modal = useGlobalModal();
 
   const currentPath = preview && preview.paths.length > 0 ? preview.paths[preview.idx] : null;
@@ -182,11 +192,21 @@ export default function DevicesPage() {
   const { data: osList } = useOperatingSystems();
   const { data: officeList } = useMicrosoftSoftware("OFFICE");
   const deleteMutation = useDeleteDevice();
+  const returnToGAMutation = useReturnDeviceToGA();
   const exportMutation = useExportExcel();
 
   const devices = data?.data ?? [];
   const total = data?.total ?? 0;
   const totalPages = Math.ceil(total / PAGE_SIZE);
+
+  const uniqueOsList = (osList ?? []).filter(
+    (o: { id: string; version: string; licenseType: string }, idx: number, arr: { version: string; licenseType: string }[]) =>
+      arr.findIndex((x) => x.version === o.version && x.licenseType === o.licenseType) === idx,
+  );
+  const uniqueOfficeList = (officeList ?? []).filter(
+    (o: { id: string; version: string; licenseType: string }, idx: number, arr: { version: string; licenseType: string }[]) =>
+      arr.findIndex((x) => x.version === o.version && x.licenseType === o.licenseType) === idx,
+  );
 
   const resetPage = () => setPage(1);
 
@@ -205,9 +225,42 @@ export default function DevicesPage() {
     }
   };
 
+  const handleReturnToGA = async () => {
+    if (!returnToGATarget) return;
+    if (!returnToGANote.trim()) {
+      modal.error({ title: "Catatan wajib diisi sebelum dikembalikan ke GA" });
+      return;
+    }
+    try {
+      await returnToGAMutation.mutateAsync({ id: returnToGATarget.id, note: returnToGANote.trim() });
+      modal.success({ title: "Perangkat berhasil dikembalikan ke GA" });
+      setReturnToGATarget(null);
+      setReturnToGANote("");
+    } catch {
+      modal.error({ title: "Gagal mengembalikan perangkat ke GA" });
+    }
+  };
+
+  const openExportDialog = () => {
+    setExportAll(true);
+    setExportDeptIds([]);
+    setExportDialogOpen(true);
+  };
+
+  const toggleExportDept = (id: string) => {
+    setExportAll(false);
+    setExportDeptIds((prev) =>
+      prev.includes(id) ? prev.filter((d) => d !== id) : [...prev, id],
+    );
+  };
+
   const handleExport = () => {
-    exportMutation.mutate(undefined, {
-      onSuccess: () => modal.success({ title: "File Excel berhasil diunduh" }),
+    const ids = exportAll ? undefined : exportDeptIds;
+    exportMutation.mutate(ids, {
+      onSuccess: () => {
+        modal.success({ title: "File Excel berhasil diunduh" });
+        setExportDialogOpen(false);
+      },
       onError: () => modal.error({ title: "Gagal export Excel" }),
     });
   };
@@ -355,6 +408,14 @@ export default function DevicesPage() {
               <Pencil className="h-4 w-4" />
             </Link>
           </Button>
+          <Button
+            variant="ghost"
+            size="icon"
+            title="Kembalikan ke GA"
+            onClick={() => { setReturnToGANote(""); setReturnToGATarget({ id: row.original.id, serialNumber: row.original.serialNumber }); }}
+          >
+            <PackageX className="h-4 w-4 text-amber-500" />
+          </Button>
           <Button variant="ghost" size="icon" onClick={() => void handleDelete(row.original.id)}>
             <Trash2 className="h-4 w-4 text-destructive" />
           </Button>
@@ -431,6 +492,14 @@ export default function DevicesPage() {
               <Pencil className="h-4 w-4" />
             </Link>
           </Button>
+          <Button
+            variant="ghost"
+            size="icon"
+            title="Kembalikan ke GA"
+            onClick={() => { setReturnToGANote(""); setReturnToGATarget({ id: row.original.id, serialNumber: row.original.serialNumber }); }}
+          >
+            <PackageX className="h-4 w-4 text-amber-500" />
+          </Button>
           <Button variant="ghost" size="icon" onClick={() => void handleDelete(row.original.id)}>
             <Trash2 className="h-4 w-4 text-destructive" />
           </Button>
@@ -473,9 +542,9 @@ export default function DevicesPage() {
           <p className="text-muted-foreground">Kelola daftar perangkat IT inventaris</p>
         </div>
         <div className="flex gap-2">
-          <Button variant="outline" onClick={handleExport} disabled={exportMutation.isPending}>
+          <Button variant="outline" onClick={openExportDialog}>
             <Download className="mr-2 h-4 w-4" />
-            {exportMutation.isPending ? "Exporting..." : "Export Excel"}
+            Export Excel
           </Button>
           <Button asChild>
             <Link href={`/devices/new?category=${activeTab}`}>
@@ -535,7 +604,7 @@ export default function DevicesPage() {
                     </SelectTrigger>
                     <SelectContent>
                       <SelectItem value="all">Semua OS</SelectItem>
-                      {(osList ?? []).map((o: { id: string; version: string; licenseType: string }) => (
+                      {uniqueOsList.map((o: { id: string; version: string; licenseType: string }) => (
                         <SelectItem key={o.id} value={o.id}>{o.version} ({o.licenseType})</SelectItem>
                       ))}
                     </SelectContent>
@@ -546,7 +615,7 @@ export default function DevicesPage() {
                     </SelectTrigger>
                     <SelectContent>
                       <SelectItem value="all">Semua Office</SelectItem>
-                      {(officeList ?? []).map((o: { id: string; version: string; licenseType: string }) => (
+                      {uniqueOfficeList.map((o: { id: string; version: string; licenseType: string }) => (
                         <SelectItem key={o.id} value={o.id}>Office {o.version} ({o.licenseType})</SelectItem>
                       ))}
                     </SelectContent>
@@ -573,6 +642,88 @@ export default function DevicesPage() {
 
         {paginationFooter}
       </Card>
+
+      {/* Export dialog */}
+      <Dialog open={exportDialogOpen} onOpenChange={setExportDialogOpen}>
+        <DialogContent className="max-w-sm">
+          <DialogHeader>
+            <DialogTitle>Export Data Perangkat IT</DialogTitle>
+            <DialogDescription>Pilih departemen yang ingin diexport ke Excel.</DialogDescription>
+          </DialogHeader>
+          <div className="space-y-2">
+            <label className="flex items-center gap-3 rounded-md border px-3 py-2 cursor-pointer hover:bg-muted/50">
+              <Checkbox
+                checked={exportAll}
+                onCheckedChange={(v) => {
+                  setExportAll(!!v);
+                  if (v) setExportDeptIds([]);
+                }}
+              />
+              <span className="text-sm font-medium">Semua Departemen</span>
+            </label>
+            <ScrollArea className="h-56 rounded-md border">
+              <div className="p-2 space-y-1">
+                {(departments ?? []).map((d: { id: string; code: string; name: string }) => (
+                  <label
+                    key={d.id}
+                    className="flex items-center gap-3 rounded px-2 py-1.5 cursor-pointer hover:bg-muted/50"
+                  >
+                    <Checkbox
+                      checked={!exportAll && exportDeptIds.includes(d.id)}
+                      onCheckedChange={() => toggleExportDept(d.id)}
+                    />
+                    <span className="text-sm">{d.name} <span className="text-muted-foreground">({d.code})</span></span>
+                  </label>
+                ))}
+              </div>
+            </ScrollArea>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setExportDialogOpen(false)}>Batal</Button>
+            <Button
+              onClick={handleExport}
+              disabled={(!exportAll && exportDeptIds.length === 0) || exportMutation.isPending}
+            >
+              <Download className="mr-2 h-4 w-4" />
+              {exportMutation.isPending ? "Mengunduh..." : "Download"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Kembalikan ke GA dialog */}
+      <Dialog open={!!returnToGATarget} onOpenChange={(o) => !o && setReturnToGATarget(null)}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle>Kembalikan Perangkat ke GA</DialogTitle>
+            <DialogDescription>
+              {returnToGATarget?.serialNumber} — perangkat akan ditandai tidak aktif. Tindakan ini tidak bisa dibatalkan.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-2">
+            <label className="text-sm font-medium">Catatan *</label>
+            <Textarea
+              placeholder="Contoh: Rusak, layar pecah, tidak bisa menyala..."
+              value={returnToGANote}
+              onChange={(e) => setReturnToGANote(e.target.value)}
+              rows={4}
+            />
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setReturnToGATarget(null)}>
+              Batal
+            </Button>
+            <Button
+              className="bg-amber-600 hover:bg-amber-700 text-white"
+              onClick={() => void handleReturnToGA()}
+              disabled={!returnToGANote.trim() || returnToGAMutation.isPending}
+            >
+              <PackageX className="mr-2 h-4 w-4" />
+              {returnToGAMutation.isPending ? "Memproses..." : "Kembalikan ke GA"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
       {/* File preview dialog */}
       <Dialog open={!!preview} onOpenChange={(o) => !o && setPreview(null)}>

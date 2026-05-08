@@ -20,6 +20,7 @@ import {
   ChevronRight,
   ClipboardCheck,
   Tags,
+  PackageX,
   type LucideIcon,
 } from "lucide-react";
 
@@ -105,6 +106,7 @@ const menuItems: MenuItem[] = [
         icon: ClipboardList,
       },
       { title: "Peminjaman", url: "/reports/loans", icon: ClipboardCheck },
+      { title: "Pengembalian ke GA", url: "/reports/returned-to-ga", icon: PackageX },
       { title: "Audit Log", url: "/reports/audit-log", icon: ClipboardList },
     ],
   },

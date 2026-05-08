@@ -33,7 +33,7 @@ function DashboardContent({ children }: { children: React.ReactNode }) {
     <SidebarProvider>
       <AppSidebar />
       <SidebarInset>
-        <header className="flex h-14 shrink-0 items-center gap-2 border-b px-4">
+        <header className="flex h-16 shrink-0 items-center gap-2 border-b px-4">
           <SidebarTrigger className="-ml-1" />
           <Separator orientation="vertical" className="mr-2 h-4" />
           <Breadcrumb>
@@ -46,20 +46,24 @@ function DashboardContent({ children }: { children: React.ReactNode }) {
           <div className="ml-auto">
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
-                <Button variant="ghost" size="sm" className="gap-2">
-                  <User className="h-4 w-4" />
-                  <span className="hidden sm:inline">{user?.username}</span>
+                <Button variant="ghost" size="sm" className="gap-2 px-3 py-2">
+                  <div className="flex h-7 w-7 items-center justify-center rounded-full bg-primary text-primary-foreground">
+                    <User className="h-3.5 w-3.5" />
+                  </div>
+                  <span className="hidden text-sm font-medium sm:inline">
+                    {user?.username}
+                  </span>
                 </Button>
               </DropdownMenuTrigger>
-              <DropdownMenuContent align="end">
+              <DropdownMenuContent align="end" className="w-52">
                 <DropdownMenuLabel>
-                  <div className="flex flex-col">
-                    <span>{user?.username}</span>
+                  <div className="flex flex-col gap-0.5">
+                    <span className="font-semibold">{user?.username}</span>
                     <span className="text-xs font-normal text-muted-foreground">
                       {user?.email}
                     </span>
-                    <span className="text-xs font-normal text-muted-foreground">
-                      {user?.role}
+                    <span className="text-xs font-normal capitalize text-muted-foreground">
+                      {user?.role?.toLowerCase()}
                     </span>
                   </div>
                 </DropdownMenuLabel>

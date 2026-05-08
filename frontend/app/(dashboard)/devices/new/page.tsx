@@ -249,7 +249,7 @@ export default function NewDevicePage() {
                   <Field>
                     <FieldLabel>Versi OS *</FieldLabel>
                     <LicenseCombobox
-                      options={(osList ?? []).map((os: { id: string; version: string; licenseType: string; serialNumber?: string | null; usedByDeviceId?: string | null }) => ({
+                      options={(osList ?? []).filter((os: { usedByDeviceId?: string | null }) => !os.usedByDeviceId).map((os: { id: string; version: string; licenseType: string; serialNumber?: string | null; usedByDeviceId?: string | null }) => ({
                         id: os.id,
                         label: `${os.version} ${os.licenseType}`,
                         serialNumber: os.serialNumber,
@@ -274,7 +274,7 @@ export default function NewDevicePage() {
                   <Field>
                     <FieldLabel>Microsoft Office</FieldLabel>
                     <LicenseCombobox
-                      options={(officeList ?? []).map((o: { id: string; version: string; licenseType: string; serialNumber?: string | null; usedByDeviceId?: string | null }) => ({
+                      options={(officeList ?? []).filter((o: { usedByDeviceId?: string | null }) => !o.usedByDeviceId).map((o: { id: string; version: string; licenseType: string; serialNumber?: string | null; usedByDeviceId?: string | null }) => ({
                         id: o.id,
                         label: `Office ${o.version} ${o.licenseType}`,
                         serialNumber: o.serialNumber,
@@ -288,7 +288,7 @@ export default function NewDevicePage() {
                   <Field>
                     <FieldLabel>Microsoft Visio</FieldLabel>
                     <LicenseCombobox
-                      options={(visioList ?? []).map((o: { id: string; version: string; licenseType: string; serialNumber?: string | null; usedByDeviceId?: string | null }) => ({
+                      options={(visioList ?? []).filter((o: { usedByDeviceId?: string | null }) => !o.usedByDeviceId).map((o: { id: string; version: string; licenseType: string; serialNumber?: string | null; usedByDeviceId?: string | null }) => ({
                         id: o.id,
                         label: `Visio ${o.version} ${o.licenseType}`,
                         serialNumber: o.serialNumber,
@@ -302,7 +302,7 @@ export default function NewDevicePage() {
                   <Field>
                     <FieldLabel>Microsoft Project</FieldLabel>
                     <LicenseCombobox
-                      options={(projectList ?? []).map((o: { id: string; version: string; licenseType: string; serialNumber?: string | null; usedByDeviceId?: string | null }) => ({
+                      options={(projectList ?? []).filter((o: { usedByDeviceId?: string | null }) => !o.usedByDeviceId).map((o: { id: string; version: string; licenseType: string; serialNumber?: string | null; usedByDeviceId?: string | null }) => ({
                         id: o.id,
                         label: `Project ${o.version} ${o.licenseType}`,
                         serialNumber: o.serialNumber,
@@ -316,7 +316,7 @@ export default function NewDevicePage() {
                   <Field>
                     <FieldLabel>Microsoft Access</FieldLabel>
                     <LicenseCombobox
-                      options={(accessList ?? []).map((o: { id: string; version: string; licenseType: string; serialNumber?: string | null; usedByDeviceId?: string | null }) => ({
+                      options={(accessList ?? []).filter((o: { usedByDeviceId?: string | null }) => !o.usedByDeviceId).map((o: { id: string; version: string; licenseType: string; serialNumber?: string | null; usedByDeviceId?: string | null }) => ({
                         id: o.id,
                         label: `Access ${o.version} ${o.licenseType}`,
                         serialNumber: o.serialNumber,

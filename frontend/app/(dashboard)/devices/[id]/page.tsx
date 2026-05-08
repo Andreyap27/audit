@@ -25,11 +25,9 @@ import {
   Dialog,
   DialogContent,
   DialogDescription,
-  DialogFooter,
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import { Textarea } from "@/components/ui/textarea";
 import {
   Table,
   TableBody,
@@ -39,13 +37,12 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { Switch } from "@/components/ui/switch";
-import { ArrowLeft, Save, Trash2, Shuffle, History, ScanLine, PackageX } from "lucide-react";
+import { ArrowLeft, Save, Trash2, Shuffle, History, ScanLine } from "lucide-react";
 import {
   useDevice,
   useUpdateDevice,
   useDeleteDevice,
   useDeviceHistory,
-  useReturnDeviceToGA,
 } from "@/hooks/use-devices";
 import {
   useDepartments,
@@ -91,12 +88,9 @@ export default function EditDevicePage() {
 
   const updateMutation = useUpdateDevice(id);
   const deleteMutation = useDeleteDevice();
-  const returnToGAMutation = useReturnDeviceToGA();
 
   const [showHistory, setShowHistory] = useState(false);
   const [scannerOpen, setScannerOpen] = useState(false);
-  const [returnToGAOpen, setReturnToGAOpen] = useState(false);
-  const [returnToGANote, setReturnToGANote] = useState("");
 
   const [form, setForm] = useState<DeviceFormState>({
     serialNumber: "",
@@ -170,20 +164,6 @@ export default function EditDevicePage() {
     }
   };
 
-  const handleReturnToGA = async () => {
-    if (!returnToGANote.trim()) {
-      modal.error({ title: "Catatan wajib diisi sebelum dikembalikan ke GA" });
-      return;
-    }
-    try {
-      await returnToGAMutation.mutateAsync({ id, note: returnToGANote.trim() });
-      modal.success({ title: "Perangkat berhasil dikembalikan ke GA" });
-      router.push("/devices");
-    } catch {
-      modal.error({ title: "Gagal mengembalikan perangkat ke GA" });
-    }
-  };
-
   const handleDelete = async () => {
     const ok = await modal.confirm({
       title: "Yakin ingin menghapus device ini?",
@@ -233,15 +213,6 @@ export default function EditDevicePage() {
           <Button variant="outline" onClick={() => setShowHistory(true)}>
             <History className="mr-2 h-4 w-4" />
             History User
-          </Button>
-          <Button
-            variant="outline"
-            className="border-amber-500 text-amber-600 hover:bg-amber-50 hover:text-amber-700"
-            onClick={() => { setReturnToGANote(""); setReturnToGAOpen(true); }}
-            disabled={returnToGAMutation.isPending}
-          >
-            <PackageX className="mr-2 h-4 w-4" />
-            Kembalikan ke GA
           </Button>
           <Button
             variant="destructive"
@@ -376,7 +347,7 @@ export default function EditDevicePage() {
               <Field>
                 <FieldLabel>Versi OS *</FieldLabel>
                 <LicenseCombobox
-                  options={(osList ?? []).map((os: { id: string; version: string; licenseType: string; serialNumber?: string | null; usedByDeviceId?: string | null }) => ({
+                  options={(osList ?? []).filter((os: { usedByDeviceId?: string | null }) => !os.usedByDeviceId || os.usedByDeviceId === id).map((os: { id: string; version: string; licenseType: string; serialNumber?: string | null; usedByDeviceId?: string | null }) => ({
                     id: os.id,
                     label: `${os.version} ${os.licenseType}`,
                     serialNumber: os.serialNumber,
@@ -402,7 +373,7 @@ export default function EditDevicePage() {
               <Field>
                 <FieldLabel>Microsoft Office</FieldLabel>
                 <LicenseCombobox
-                  options={(officeList ?? []).map((o: { id: string; version: string; licenseType: string; serialNumber?: string | null; usedByDeviceId?: string | null }) => ({
+                  options={(officeList ?? []).filter((o: { usedByDeviceId?: string | null }) => !o.usedByDeviceId || o.usedByDeviceId === id).map((o: { id: string; version: string; licenseType: string; serialNumber?: string | null; usedByDeviceId?: string | null }) => ({
                     id: o.id,
                     label: `Office ${o.version} ${o.licenseType}`,
                     serialNumber: o.serialNumber,
@@ -417,7 +388,7 @@ export default function EditDevicePage() {
               <Field>
                 <FieldLabel>Microsoft Visio</FieldLabel>
                 <LicenseCombobox
-                  options={(visioList ?? []).map((o: { id: string; version: string; licenseType: string; serialNumber?: string | null; usedByDeviceId?: string | null }) => ({
+                  options={(visioList ?? []).filter((o: { usedByDeviceId?: string | null }) => !o.usedByDeviceId || o.usedByDeviceId === id).map((o: { id: string; version: string; licenseType: string; serialNumber?: string | null; usedByDeviceId?: string | null }) => ({
                     id: o.id,
                     label: `Visio ${o.version} ${o.licenseType}`,
                     serialNumber: o.serialNumber,
@@ -432,7 +403,7 @@ export default function EditDevicePage() {
               <Field>
                 <FieldLabel>Microsoft Project</FieldLabel>
                 <LicenseCombobox
-                  options={(projectList ?? []).map((o: { id: string; version: string; licenseType: string; serialNumber?: string | null; usedByDeviceId?: string | null }) => ({
+                  options={(projectList ?? []).filter((o: { usedByDeviceId?: string | null }) => !o.usedByDeviceId || o.usedByDeviceId === id).map((o: { id: string; version: string; licenseType: string; serialNumber?: string | null; usedByDeviceId?: string | null }) => ({
                     id: o.id,
                     label: `Project ${o.version} ${o.licenseType}`,
                     serialNumber: o.serialNumber,
@@ -447,7 +418,7 @@ export default function EditDevicePage() {
               <Field>
                 <FieldLabel>Microsoft Access</FieldLabel>
                 <LicenseCombobox
-                  options={(accessList ?? []).map((o: { id: string; version: string; licenseType: string; serialNumber?: string | null; usedByDeviceId?: string | null }) => ({
+                  options={(accessList ?? []).filter((o: { usedByDeviceId?: string | null }) => !o.usedByDeviceId || o.usedByDeviceId === id).map((o: { id: string; version: string; licenseType: string; serialNumber?: string | null; usedByDeviceId?: string | null }) => ({
                     id: o.id,
                     label: `Access ${o.version} ${o.licenseType}`,
                     serialNumber: o.serialNumber,
@@ -479,39 +450,6 @@ export default function EditDevicePage() {
         onOpenChange={setScannerOpen}
         onScanned={(value) => setFormField("serialNumber", value)}
       />
-
-      <Dialog open={returnToGAOpen} onOpenChange={setReturnToGAOpen}>
-        <DialogContent className="max-w-md">
-          <DialogHeader>
-            <DialogTitle>Kembalikan Perangkat ke GA</DialogTitle>
-            <DialogDescription>
-              Perangkat akan ditandai tidak aktif dan tidak dapat digunakan lagi. Tindakan ini tidak bisa dibatalkan.
-            </DialogDescription>
-          </DialogHeader>
-          <div className="space-y-2">
-            <label className="text-sm font-medium">Catatan *</label>
-            <Textarea
-              placeholder="Contoh: Rusak, layar pecah, tidak bisa menyala..."
-              value={returnToGANote}
-              onChange={(e) => setReturnToGANote(e.target.value)}
-              rows={4}
-            />
-          </div>
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setReturnToGAOpen(false)}>
-              Batal
-            </Button>
-            <Button
-              className="bg-amber-600 hover:bg-amber-700 text-white"
-              onClick={() => void handleReturnToGA()}
-              disabled={!returnToGANote.trim() || returnToGAMutation.isPending}
-            >
-              <PackageX className="mr-2 h-4 w-4" />
-              {returnToGAMutation.isPending ? "Memproses..." : "Kembalikan ke GA"}
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
 
       <Dialog open={showHistory} onOpenChange={setShowHistory}>
         <DialogContent className="max-w-5xl">

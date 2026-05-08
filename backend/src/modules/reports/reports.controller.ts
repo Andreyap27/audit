@@ -111,6 +111,48 @@ export const exportLoanReport = async (
   }
 };
 
+const returnedToGAFilterSchema = z.object({
+  departmentId: z.string().uuid().optional(),
+  search: z.string().optional(),
+  dateFrom: z.string().optional(),
+  dateTo: z.string().optional(),
+  page: z.coerce.number().int().positive().default(1),
+  limit: z.coerce.number().int().positive().max(100).default(20),
+});
+
+export const getReturnedToGA = async (
+  req: AuthRequest,
+  res: Response,
+  next: NextFunction,
+): Promise<void> => {
+  try {
+    const parsed = returnedToGAFilterSchema.safeParse(req.query);
+    if (!parsed.success) {
+      res.status(400).json({ message: "Validation error" });
+      return;
+    }
+    res.json(await service.getReturnedToGA(parsed.data));
+  } catch (err) {
+    next(err);
+  }
+};
+
+export const exportReturnedToGA = async (
+  req: AuthRequest,
+  res: Response,
+  next: NextFunction,
+): Promise<void> => {
+  try {
+    const { departmentId, dateFrom, dateTo } = req.query as Record<string, string>;
+    const buffer = await service.exportReturnedToGA({ departmentId, dateFrom, dateTo });
+    res.setHeader("Content-Type", "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet");
+    res.setHeader("Content-Disposition", `attachment; filename="laporan-pengembalian-ga-${Date.now()}.xlsx"`);
+    res.send(buffer);
+  } catch (err) {
+    next(err);
+  }
+};
+
 export const getAuditLog = async (
   req: AuthRequest,
   res: Response,

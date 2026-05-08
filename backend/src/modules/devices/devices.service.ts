@@ -135,13 +135,58 @@ export const getDevices = async (filters: {
   page: number;
   limit: number;
 }) => {
-  const { search, page, limit, ...rest } = filters;
+  const {
+    search, page, limit,
+    operatingSystemId, officeId, visioId, projectId, accessId,
+    ...rest
+  } = filters;
   const skip = (page - 1) * limit;
 
   const where: Record<string, unknown> = { isActive: true };
 
   for (const [key, value] of Object.entries(rest)) {
     if (value !== undefined) where[key] = value;
+  }
+
+  // Filter software by version+licenseType so all records with the same label match
+  if (operatingSystemId) {
+    const os = await prisma.operatingSystem.findUnique({
+      where: { id: operatingSystemId },
+      select: { version: true, licenseType: true },
+    });
+    if (os) where.operatingSystem = { version: os.version, licenseType: os.licenseType };
+  }
+
+  if (officeId) {
+    const sw = await prisma.microsoftSoftware.findUnique({
+      where: { id: officeId },
+      select: { version: true, licenseType: true },
+    });
+    if (sw) where.office = { version: sw.version, licenseType: sw.licenseType };
+  }
+
+  if (visioId) {
+    const sw = await prisma.microsoftSoftware.findUnique({
+      where: { id: visioId },
+      select: { version: true, licenseType: true },
+    });
+    if (sw) where.visio = { version: sw.version, licenseType: sw.licenseType };
+  }
+
+  if (projectId) {
+    const sw = await prisma.microsoftSoftware.findUnique({
+      where: { id: projectId },
+      select: { version: true, licenseType: true },
+    });
+    if (sw) where.project = { version: sw.version, licenseType: sw.licenseType };
+  }
+
+  if (accessId) {
+    const sw = await prisma.microsoftSoftware.findUnique({
+      where: { id: accessId },
+      select: { version: true, licenseType: true },
+    });
+    if (sw) where.access = { version: sw.version, licenseType: sw.licenseType };
   }
 
   if (search) {

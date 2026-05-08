@@ -392,6 +392,114 @@ export const exportLoanReport = async (params: {
   return workbook.xlsx.writeBuffer();
 };
 
+export const getReturnedToGA = async (params: {
+  departmentId?: string;
+  search?: string;
+  dateFrom?: string;
+  dateTo?: string;
+  page: number;
+  limit: number;
+}) => {
+  const { departmentId, search, dateFrom, dateTo, page, limit } = params;
+  const skip = (page - 1) * limit;
+
+  const where: Record<string, unknown> = {
+    isActive: false,
+    returnedToGAAt: { not: null },
+  };
+
+  if (departmentId) where.departmentId = departmentId;
+  if (dateFrom || dateTo) {
+    where.returnedToGAAt = {
+      ...(dateFrom ? { gte: new Date(dateFrom) } : {}),
+      ...(dateTo ? { lte: new Date(new Date(dateTo).setHours(23, 59, 59, 999)) } : {}),
+    };
+  }
+  if (search) {
+    where.OR = [
+      { serialNumber: { contains: search, mode: "insensitive" } },
+      { assetCode: { contains: search, mode: "insensitive" } },
+      { userName: { contains: search, mode: "insensitive" } },
+      { returnedToGANote: { contains: search, mode: "insensitive" } },
+    ];
+  }
+
+  const [data, total] = await Promise.all([
+    prisma.device.findMany({
+      where,
+      include: { department: true, unitType: true },
+      orderBy: { returnedToGAAt: "desc" },
+      skip,
+      take: limit,
+    }),
+    prisma.device.count({ where }),
+  ]);
+
+  return { data, total, page, limit, totalPages: Math.ceil(total / limit) };
+};
+
+export const exportReturnedToGA = async (params: {
+  departmentId?: string;
+  dateFrom?: string;
+  dateTo?: string;
+}) => {
+  const where: Record<string, unknown> = {
+    isActive: false,
+    returnedToGAAt: { not: null },
+  };
+  if (params.departmentId) where.departmentId = params.departmentId;
+  if (params.dateFrom || params.dateTo) {
+    where.returnedToGAAt = {
+      ...(params.dateFrom ? { gte: new Date(params.dateFrom) } : {}),
+      ...(params.dateTo ? { lte: new Date(new Date(params.dateTo).setHours(23, 59, 59, 999)) } : {}),
+    };
+  }
+
+  const devices = await prisma.device.findMany({
+    where,
+    include: { department: true, unitType: true },
+    orderBy: { returnedToGAAt: "desc" },
+  });
+
+  const workbook = new ExcelJS.Workbook();
+  workbook.creator = "IT Audit System";
+  workbook.created = new Date();
+
+  const sheet = workbook.addWorksheet("Pengembalian ke GA");
+  sheet.columns = [
+    { header: "No.", key: "no", width: 5 },
+    { header: "Asset Code", key: "assetCode", width: 16 },
+    { header: "Serial Number", key: "serial", width: 24 },
+    { header: "Kategori", key: "category", width: 12 },
+    { header: "Departemen", key: "dept", width: 14 },
+    { header: "User Terakhir", key: "user", width: 28 },
+    { header: "Tgl. Dikembalikan", key: "returnedAt", width: 20 },
+    { header: "Catatan", key: "note", width: 40 },
+  ];
+
+  sheet.getRow(1).font = { bold: true };
+  sheet.getRow(1).fill = {
+    type: "pattern",
+    pattern: "solid",
+    fgColor: { argb: "FFFCE4D6" },
+  };
+
+  devices.forEach((d, i) => {
+    sheet.addRow({
+      no: i + 1,
+      assetCode: d.assetCode ?? "-",
+      serial: d.serialNumber,
+      category: d.category === "COMPUTER" ? "Komputer" : "Hardware",
+      dept: d.department?.code ?? "-",
+      user: d.userName ?? "-",
+      returnedAt: d.returnedToGAAt ? d.returnedToGAAt.toLocaleString("id-ID") : "-",
+      note: d.returnedToGANote ?? "-",
+    });
+  });
+
+  return workbook.xlsx.writeBuffer();
+};
+
 export const getAuditLog = async (params: {
   action?: string;
   userId?: string;
@@ -435,9 +543,22 @@ export const getAuditLog = async (params: {
   return { data, total, page, limit, totalPages: Math.ceil(total / limit) };
 };
 
-export const exportToExcel = async (filters: { departmentId?: string }) => {
+export const exportToExcel = async (filters: { departmentId?: string | string[] }) => {
+  const deptIds = filters.departmentId
+    ? Array.isArray(filters.departmentId)
+      ? filters.departmentId
+      : [filters.departmentId]
+    : null; // null = semua departemen
+
   const where: Record<string, unknown> = { isActive: true, category: "COMPUTER" };
-  if (filters.departmentId) where.departmentId = filters.departmentId;
+  if (deptIds) where.departmentId = deptIds.length === 1 ? deptIds[0] : { in: deptIds };
+
+  // Fetch target departments in order (all if no filter, selected if filtered)
+  const targetDepts = await prisma.department.findMany({
+    where: deptIds ? { id: { in: deptIds } } : {},
+    select: { code: true },
+    orderBy: { code: "asc" },
+  });
 
   const devices = await prisma.device.findMany({
     where,
@@ -457,29 +578,36 @@ export const exportToExcel = async (filters: { departmentId?: string }) => {
   workbook.creator = "IT Audit System";
   workbook.created = new Date();
 
-  // Group devices by department
+  // Pre-populate map with all target departments (ensures empty depts get a sheet too)
   const byDept = new Map<string, typeof devices>();
+  for (const dept of targetDepts) {
+    byDept.set(dept.code, []);
+  }
+
+  // Fill in devices
   for (const device of devices) {
     const code = device.department.code;
     if (!byDept.has(code)) byDept.set(code, []);
     byDept.get(code)!.push(device);
   }
 
+  const COLUMNS = [
+    { header: "No.", key: "no", width: 5 },
+    { header: "Serial Number", key: "serial", width: 22 },
+    { header: "NB/WS", key: "type", width: 8 },
+    { header: "User", key: "user", width: 28 },
+    { header: "Dept.", key: "dept", width: 10 },
+    { header: "Windows", key: "windows", width: 18 },
+    { header: "Office", key: "office", width: 18 },
+    { header: "Visio", key: "visio", width: 18 },
+    { header: "Project", key: "project", width: 18 },
+    { header: "Access", key: "access", width: 18 },
+  ] as const;
+
   for (const [deptCode, deptDevices] of byDept) {
     const sheet = workbook.addWorksheet(deptCode);
 
-    sheet.columns = [
-      { header: "No.", key: "no", width: 5 },
-      { header: "Serial Number", key: "serial", width: 22 },
-      { header: "NB/WS", key: "type", width: 8 },
-      { header: "User", key: "user", width: 28 },
-      { header: "Dept.", key: "dept", width: 10 },
-      { header: "Windows", key: "windows", width: 18 },
-      { header: "Office", key: "office", width: 18 },
-      { header: "Visio", key: "visio", width: 18 },
-      { header: "Project", key: "project", width: 18 },
-      { header: "Access", key: "access", width: 18 },
-    ];
+    sheet.columns = [...COLUMNS];
 
     sheet.getRow(1).font = { bold: true };
     sheet.getRow(1).fill = {

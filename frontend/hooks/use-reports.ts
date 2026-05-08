@@ -54,6 +54,38 @@ export const useExportLoanReport = () =>
     },
   });
 
+export interface ReturnedToGAFilters {
+  departmentId?: string;
+  search?: string;
+  dateFrom?: string;
+  dateTo?: string;
+  page?: number;
+  limit?: number;
+}
+
+export const useReturnedToGA = (params: ReturnedToGAFilters) =>
+  useQuery({
+    queryKey: ["reports", "returned-to-ga", params],
+    queryFn: () =>
+      api.get("/reports/returned-to-ga", { params }).then((r) => r.data),
+  });
+
+export const useExportReturnedToGA = () =>
+  useMutation({
+    mutationFn: async (params: { departmentId?: string; dateFrom?: string; dateTo?: string }) => {
+      const res = await api.get("/reports/returned-to-ga/export", {
+        params,
+        responseType: "blob",
+      });
+      const url = URL.createObjectURL(new Blob([res.data]));
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = `laporan-pengembalian-ga-${Date.now()}.xlsx`;
+      a.click();
+      URL.revokeObjectURL(url);
+    },
+  });
+
 export const useAuditLog = (params: {
   action?: string;
   userId?: string;
