@@ -1,7 +1,7 @@
 "use client";
 
 import { useRef, useState, useEffect, useCallback } from "react";
-import { Camera, Upload, X, CheckCircle2, Loader2 } from "lucide-react";
+import { Camera, Upload, X, CheckCircle2, Loader2, AlertTriangle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useUploadEvidence } from "@/hooks/use-devices";
 import { cn } from "@/lib/utils";
@@ -36,8 +36,23 @@ export function LivePhotoCapture({
     setCameraActive(false);
   }, []);
 
+  const [cameraError, setCameraError] = useState<string | null>(null);
+
   useEffect(() => {
     if (mode !== "camera" || preview || value) return;
+
+    const isSecureContext =
+      window.isSecureContext ||
+      location.hostname === "localhost" ||
+      location.hostname === "127.0.0.1";
+
+    if (!isSecureContext) {
+      setCameraError(
+        "Akses kamera memerlukan HTTPS. Gunakan mode Upload File untuk melanjutkan.",
+      );
+      setMode("file");
+      return;
+    }
 
     let mounted = true;
     navigator.mediaDevices
@@ -50,9 +65,13 @@ export function LivePhotoCapture({
         streamRef.current = stream;
         if (videoRef.current) videoRef.current.srcObject = stream;
         setCameraActive(true);
+        setCameraError(null);
       })
       .catch(() => {
-        if (mounted) onError?.("Tidak dapat mengakses kamera. Gunakan mode Upload File.");
+        if (mounted) {
+          setCameraError("Kamera tidak dapat diakses. Silakan gunakan mode Upload File.");
+          setMode("file");
+        }
       });
 
     return () => {
@@ -112,6 +131,7 @@ export function LivePhotoCapture({
 
   const switchMode = (next: "camera" | "file") => {
     stopCamera();
+    setCameraError(null);
     setMode(next);
   };
 
@@ -158,6 +178,12 @@ export function LivePhotoCapture({
   // ── Camera / File selector ──
   return (
     <div className="space-y-2">
+      {cameraError && (
+        <div className="flex items-start gap-2 rounded-md border border-amber-200 bg-amber-50 dark:bg-amber-950/20 px-3 py-2 text-xs text-amber-700 dark:text-amber-400">
+          <AlertTriangle className="h-3.5 w-3.5 mt-0.5 shrink-0" />
+          <span>{cameraError}</span>
+        </div>
+      )}
       <div className="flex overflow-hidden rounded-lg border">
         <button
           type="button"

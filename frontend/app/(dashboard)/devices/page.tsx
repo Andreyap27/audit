@@ -71,7 +71,7 @@ type DeviceRow = {
   visio: { version: string; proofPaths?: string[] } | null;
   project: { version: string; proofPaths?: string[] } | null;
   access: { version: string; proofPaths?: string[] } | null;
-  serialNumberProofPath?: string | null;
+  serialNumberProofPaths?: string[];
   notes?: string | null;
 };
 
@@ -315,7 +315,7 @@ export default function DevicesPage() {
             {renderProofText(
               "Bukti Serial Number",
               row.original.serialNumber,
-              row.original.serialNumberProofPath ? [row.original.serialNumberProofPath] : [],
+              row.original.serialNumberProofPaths ?? [],
               true,
             )}
           </span>
@@ -456,7 +456,7 @@ export default function DevicesPage() {
             {renderProofText(
               "Bukti Serial Number",
               row.original.serialNumber,
-              row.original.serialNumberProofPath ? [row.original.serialNumberProofPath] : [],
+              row.original.serialNumberProofPaths ?? [],
               true,
             )}
           </span>

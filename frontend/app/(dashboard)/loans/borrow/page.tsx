@@ -37,6 +37,15 @@ const STEPS = [
 export default function BorrowPage() {
   const [step, setStep] = useState<Step>("scan");
   const [scanMode, setScanMode] = useState<ScanMode>("camera");
+
+  // Switch to manual if not on HTTPS/localhost (camera API unavailable)
+  useEffect(() => {
+    const secure =
+      window.isSecureContext ||
+      location.hostname === "localhost" ||
+      location.hostname === "127.0.0.1";
+    if (!secure) setScanMode("manual");
+  }, []);
   const [serialNumber, setSerialNumber] = useState("");
   const [manualInput, setManualInput] = useState("");
   const [borrowerName, setBorrowerName] = useState("");

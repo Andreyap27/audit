@@ -102,7 +102,7 @@ export default function ReassignDevicePage() {
         visioId: normalizeId(form.visioId),
         projectId: normalizeId(form.projectId),
         accessId: normalizeId(form.accessId),
-        serialNumberProofPath: device?.serialNumberProofPath ?? null,
+        serialNumberProofPaths: (device as { serialNumberProofPaths?: string[] })?.serialNumberProofPaths ?? [],
         reassignmentNote: form.reassignmentNote || undefined,
       });
       modal.success({

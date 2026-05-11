@@ -18,7 +18,7 @@ export const createDeviceSchema = z.object({
   projectId: optionalUuid,
   accessId: optionalUuid,
   notes: z.string().optional(),
-  serialNumberProofPath: z.string().optional(),
+  serialNumberProofPaths: z.string().array().optional(),
 });
 
 export const updateDeviceSchema = z.object({
@@ -34,7 +34,7 @@ export const updateDeviceSchema = z.object({
   projectId: nullableUuid,
   accessId: nullableUuid,
   notes: z.string().optional(),
-  serialNumberProofPath: nullableString,
+  serialNumberProofPaths: z.string().array().optional(),
 });
 
 export const reassignDeviceSchema = z.object({
@@ -47,7 +47,7 @@ export const reassignDeviceSchema = z.object({
   projectId: nullableUuid,
   accessId: nullableUuid,
   reassignmentNote: z.string().optional(),
-  serialNumberProofPath: nullableString,
+  serialNumberProofPaths: z.string().array().optional(),
 });
 
 export const deviceFilterSchema = z.object({

@@ -1,8 +1,8 @@
 "use client";
 
-import { useEffect, useRef, useCallback } from "react";
+import { useEffect, useRef, useCallback, useState } from "react";
 import { BrowserMultiFormatReader } from "@zxing/browser";
-import { Camera } from "lucide-react";
+import { Camera, AlertTriangle } from "lucide-react";
 
 interface QRScannerProps {
   onResult: (text: string) => void;
@@ -13,6 +13,7 @@ export function QRScanner({ onResult, active = true }: QRScannerProps) {
   const videoRef = useRef<HTMLVideoElement>(null);
   const controlsRef = useRef<{ stop: () => void } | null>(null);
   const resultHandled = useRef(false);
+  const [cameraError, setCameraError] = useState<string | null>(null);
 
   const stopScanning = useCallback(() => {
     controlsRef.current?.stop();
@@ -22,7 +23,21 @@ export function QRScanner({ onResult, active = true }: QRScannerProps) {
 
   useEffect(() => {
     if (!active || !videoRef.current) return;
+
+    const isSecureContext =
+      window.isSecureContext ||
+      location.hostname === "localhost" ||
+      location.hostname === "127.0.0.1";
+
+    if (!isSecureContext) {
+      setCameraError(
+        "Scan QR Code memerlukan koneksi HTTPS. Gunakan mode Input Manual untuk melanjutkan.",
+      );
+      return;
+    }
+
     resultHandled.current = false;
+    setCameraError(null);
     const reader = new BrowserMultiFormatReader();
     reader.decodeFromVideoDevice(
       undefined,
@@ -38,11 +53,25 @@ export function QRScanner({ onResult, active = true }: QRScannerProps) {
           console.warn("QR scan error:", error);
         }
       },
-    );
+    ).catch(() => {
+      setCameraError("Kamera tidak dapat diakses. Gunakan mode Input Manual.");
+    });
     return () => {
       stopScanning();
     };
   }, [active, onResult, stopScanning]);
+
+  if (cameraError) {
+    return (
+      <div className="flex flex-col items-center gap-3 py-8 text-center">
+        <div className="flex h-14 w-14 items-center justify-center rounded-full bg-amber-100 dark:bg-amber-900/30">
+          <AlertTriangle className="h-7 w-7 text-amber-600" />
+        </div>
+        <p className="text-sm font-medium text-amber-800 dark:text-amber-300">Kamera Tidak Tersedia</p>
+        <p className="text-xs text-muted-foreground max-w-xs">{cameraError}</p>
+      </div>
+    );
+  }
 
   return (
     <div className="w-full flex flex-col items-center gap-4">

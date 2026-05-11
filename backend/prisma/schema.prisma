@@ -114,9 +114,9 @@ model Device {
   access   MicrosoftSoftware? @relation("DeviceAccess", fields: [accessId], references: [id])
   accessId String?
 
-  notes                 String?
-  serialNumberProofPath String?
-  isActive              Boolean   @default(true)
+  notes                  String?
+  serialNumberProofPaths String[] @default([])
+  isActive               Boolean  @default(true)
   returnedToGAAt        DateTime?
   returnedToGANote      String?
   createdAt             DateTime  @default(now())

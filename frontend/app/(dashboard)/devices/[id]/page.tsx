@@ -65,7 +65,7 @@ type DeviceFormState = {
   visioId: string;
   projectId: string;
   accessId: string;
-  serialNumberProofPath: string;
+  serialNumberProofPaths: string[];
   canBeLent: boolean;
   notes: string;
 };
@@ -91,6 +91,7 @@ export default function EditDevicePage() {
 
   const [showHistory, setShowHistory] = useState(false);
   const [scannerOpen, setScannerOpen] = useState(false);
+  const [formInitialized, setFormInitialized] = useState(false);
 
   const [form, setForm] = useState<DeviceFormState>({
     serialNumber: "",
@@ -102,13 +103,13 @@ export default function EditDevicePage() {
     visioId: "",
     projectId: "",
     accessId: "",
-    serialNumberProofPath: "",
+    serialNumberProofPaths: [],
     canBeLent: false,
     notes: "",
   });
 
   useEffect(() => {
-    if (!device) return;
+    if (!device || formInitialized) return;
     setForm({
       serialNumber: device.serialNumber ?? "",
       userName: device.userName ?? "",
@@ -119,13 +120,14 @@ export default function EditDevicePage() {
       visioId: device.visioId ?? "none",
       projectId: device.projectId ?? "none",
       accessId: device.accessId ?? "none",
-      serialNumberProofPath: device.serialNumberProofPath ?? "",
+      serialNumberProofPaths: (device as { serialNumberProofPaths?: string[] }).serialNumberProofPaths ?? [],
       canBeLent: (device as { canBeLent?: boolean }).canBeLent ?? false,
       notes: (device as { notes?: string }).notes ?? "",
     });
-  }, [device]);
+    setFormInitialized(true);
+  }, [device, formInitialized]);
 
-  const setFormField = (k: keyof DeviceFormState, v: string | boolean) =>
+  const setFormField = (k: keyof DeviceFormState, v: string | boolean | string[]) =>
     setForm((prev) => ({ ...prev, [k]: v }));
 
   const isComputer = (device as { category?: string } | undefined)?.category !== "HARDWARE";
@@ -155,7 +157,7 @@ export default function EditDevicePage() {
         visioId: isComputer ? normalizeId(form.visioId) : null,
         projectId: isComputer ? normalizeId(form.projectId) : null,
         accessId: isComputer ? normalizeId(form.accessId) : null,
-        serialNumberProofPath: form.serialNumberProofPath || undefined,
+        serialNumberProofPaths: form.serialNumberProofPaths,
       });
       modal.success({ title: "Device berhasil diperbarui" });
       router.push("/devices");
@@ -181,7 +183,7 @@ export default function EditDevicePage() {
     }
   };
 
-  if (isLoading || isDeptLoading || isUnitLoading)
+  if (isLoading || !formInitialized || isDeptLoading || isUnitLoading)
     return (
       <div className="space-y-4">
         <Skeleton className="h-12 w-full" />
@@ -255,9 +257,9 @@ export default function EditDevicePage() {
                 </div>
                 <EvidenceUploadField
                   label="Serial Number"
-                  value={form.serialNumberProofPath}
+                  value={form.serialNumberProofPaths}
                   serialNumber={form.serialNumber}
-                  onUploaded={(path) => setFormField("serialNumberProofPath", path)}
+                  onUploaded={(paths) => setFormField("serialNumberProofPaths", paths)}
                   onError={(message) => modal.error({ title: message })}
                 />
               </Field>

@@ -51,7 +51,7 @@ export default function NewDevicePage() {
     visioId: "",
     projectId: "",
     accessId: "",
-    serialNumberProofPath: "",
+    serialNumberProofPaths: [] as string[],
     notes: "",
     canBeLent: false,
   });
@@ -68,7 +68,7 @@ export default function NewDevicePage() {
   const createMutation = useCreateDevice();
   const modal = useGlobalModal();
 
-  const set = (k: string, v: string | boolean) => setForm((f) => ({ ...f, [k]: v }));
+  const set = (k: string, v: string | boolean | string[]) => setForm((f) => ({ ...f, [k]: v }));
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
@@ -97,7 +97,7 @@ export default function NewDevicePage() {
         projectId: form.projectId && form.projectId !== "none" ? form.projectId : undefined,
         accessId: form.accessId && form.accessId !== "none" ? form.accessId : undefined,
         notes: form.notes || undefined,
-        serialNumberProofPath: form.serialNumberProofPath || undefined,
+        serialNumberProofPaths: form.serialNumberProofPaths,
       });
       modal.success({ title: "Device berhasil ditambahkan" });
       router.push("/devices");
@@ -160,9 +160,9 @@ export default function NewDevicePage() {
                 </div>
                 <EvidenceUploadField
                   label="Serial Number"
-                  value={form.serialNumberProofPath}
+                  value={form.serialNumberProofPaths}
                   serialNumber={form.serialNumber}
-                  onUploaded={(path) => set("serialNumberProofPath", path)}
+                  onUploaded={(paths) => set("serialNumberProofPaths", paths)}
                   onError={(message) => modal.error({ title: message })}
                 />
               </Field>

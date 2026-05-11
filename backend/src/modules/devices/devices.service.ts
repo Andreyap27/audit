@@ -93,7 +93,7 @@ const buildHistorySnapshot = (device: {
   visio: { version: string; licenseType: string } | null;
   project: { version: string; licenseType: string } | null;
   access: { version: string; licenseType: string } | null;
-  serialNumberProofPath: string | null;
+  serialNumberProofPaths: string[];
 }) => ({
   userName: device.userName,
   departmentCode: device.department?.code,
@@ -119,7 +119,7 @@ const buildHistorySnapshot = (device: {
   accessLabel: device.access
     ? labelSoftware("Access", device.access.version, device.access.licenseType)
     : null,
-  serialNumberProofPath: device.serialNumberProofPath,
+  serialNumberProofPath: device.serialNumberProofPaths[0] ?? null,
 });
 
 export const getDevices = async (filters: {
@@ -235,7 +235,7 @@ export const createDevice = async (
     projectId?: string;
     accessId?: string;
     notes?: string;
-    serialNumberProofPath?: string;
+    serialNumberProofPaths?: string[];
   },
   userId: string,
 ) => {
@@ -315,7 +315,7 @@ export const deleteDevice = async (id: string, userId: string) => {
     },
   });
 
-  deleteProofFile(existing.serialNumberProofPath);
+  for (const p of existing.serialNumberProofPaths) deleteProofFile(p);
   deleteProofDir(existing.serialNumber);
 };
 
@@ -331,7 +331,7 @@ export const reassignDevice = async (
     projectId?: string | null;
     accessId?: string | null;
     reassignmentNote?: string;
-    serialNumberProofPath?: string | null;
+    serialNumberProofPaths?: string[];
   },
   userId: string,
 ) => {
@@ -356,7 +356,7 @@ export const reassignDevice = async (
         visioId: data.visioId ?? null,
         projectId: data.projectId ?? null,
         accessId: data.accessId ?? null,
-        serialNumberProofPath: data.serialNumberProofPath ?? null,
+        serialNumberProofPaths: data.serialNumberProofPaths ?? [],
       },
       include: deviceInclude,
     });
