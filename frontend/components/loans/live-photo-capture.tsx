@@ -95,7 +95,7 @@ export function LivePhotoCapture({
       setPreview(previewUrl);
       const file = new File([blob], `foto-${Date.now()}.jpg`, { type: "image/jpeg" });
       try {
-        const res = await uploadEvidence.mutateAsync({ file, serialNumber });
+        const res = await uploadEvidence.mutateAsync({ file, module: "loans", folder: serialNumber });
         onUploaded(res.path);
       } catch {
         onError?.("Gagal upload foto, coba lagi");
@@ -112,7 +112,7 @@ export function LivePhotoCapture({
     const previewUrl = URL.createObjectURL(file);
     setPreview(previewUrl);
     try {
-      const res = await uploadEvidence.mutateAsync({ file, serialNumber });
+      const res = await uploadEvidence.mutateAsync({ file, module: "loans", folder: serialNumber });
       onUploaded(res.path);
     } catch {
       onError?.("Gagal upload foto, coba lagi");

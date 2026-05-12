@@ -6,19 +6,19 @@ import { authenticate, authorize } from "../../middleware/auth";
 import { uploadEvidence, uploadEvidenceMultiple } from "./uploads.controller";
 import type { Request } from "express";
 
-const baseEvidenceDir = path.resolve(process.cwd(), "uploads", "evidence");
-fs.mkdirSync(baseEvidenceDir, { recursive: true });
+const baseUploadsDir = path.resolve(process.cwd(), "uploads");
+fs.mkdirSync(baseUploadsDir, { recursive: true });
 
-const buildStorage = (folderQueryParam: string) =>
+const buildStorage = () =>
   multer.diskStorage({
     destination: (req: Request, _file, cb) => {
-      const folder = (req.query[folderQueryParam] as string | undefined)?.trim();
-      const safeFolder = folder
-        ? folder.replace(/[^a-zA-Z0-9_-]/g, "_")
-        : "";
+      const module = ((req.query.module as string | undefined)?.trim() || "misc")
+        .replace(/[^a-zA-Z0-9_-]/g, "_");
+      const folder = (req.query.folder as string | undefined)?.trim();
+      const safeFolder = folder ? folder.replace(/[^a-zA-Z0-9_-]/g, "_") : "";
       const dest = safeFolder
-        ? path.join(baseEvidenceDir, safeFolder)
-        : baseEvidenceDir;
+        ? path.join(baseUploadsDir, module, safeFolder)
+        : path.join(baseUploadsDir, module);
       fs.mkdirSync(dest, { recursive: true });
       cb(null, dest);
     },
@@ -45,14 +45,16 @@ const fileFilter = (
   cb(new Error("Hanya file .txt atau gambar (png/jpg/jpeg/gif/webp) yang diizinkan"));
 };
 
+const storage = buildStorage();
+
 const uploadSingle = multer({
-  storage: buildStorage("serialNumber"),
+  storage,
   limits: { fileSize: 10 * 1024 * 1024 },
   fileFilter,
 });
 
 const uploadMultiple = multer({
-  storage: buildStorage("folder"),
+  storage,
   limits: { fileSize: 10 * 1024 * 1024, files: 10 },
   fileFilter,
 });

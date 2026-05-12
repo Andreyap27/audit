@@ -75,10 +75,11 @@ export const useReturnDeviceToGA = () => {
 
 export const useUploadEvidence = () => {
   return useMutation({
-    mutationFn: ({ file, serialNumber }: { file: File; serialNumber?: string }) => {
+    mutationFn: ({ file, module, folder }: { file: File; module: string; folder?: string }) => {
       const fd = new FormData();
       fd.append("file", file);
-      const params = serialNumber ? { serialNumber } : {};
+      const params: Record<string, string> = { module };
+      if (folder) params.folder = folder;
       return api
         .post("/uploads/evidence", fd, {
           headers: { "Content-Type": "multipart/form-data" },

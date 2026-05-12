@@ -61,7 +61,8 @@ export function EvidenceUploadField({
       try {
         const res = await uploadMutation.mutateAsync({
           file,
-          serialNumber: serialNumber?.trim() || undefined,
+          module: "devices",
+          folder: serialNumber?.trim() || undefined,
         });
         newPaths.push(res.path as string);
       } catch (err: unknown) {

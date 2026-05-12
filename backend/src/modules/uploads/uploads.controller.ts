@@ -1,6 +1,16 @@
 import { Response, NextFunction } from "express";
 import { AuthRequest } from "../../middleware/auth";
 
+const buildRelativePath = (req: AuthRequest, filename: string): string => {
+  const module = ((req.query.module as string | undefined)?.trim() || "misc")
+    .replace(/[^a-zA-Z0-9_-]/g, "_");
+  const folder = (req.query.folder as string | undefined)?.trim();
+  const safeFolder = folder ? folder.replace(/[^a-zA-Z0-9_-]/g, "_") : "";
+  return safeFolder
+    ? `/uploads/${module}/${safeFolder}/${filename}`
+    : `/uploads/${module}/${filename}`;
+};
+
 export const uploadEvidence = async (
   req: AuthRequest,
   res: Response,
@@ -12,14 +22,7 @@ export const uploadEvidence = async (
       return;
     }
 
-    const serialNumber = (req.query.serialNumber as string | undefined)?.trim();
-    const safeSerial = serialNumber
-      ? serialNumber.replace(/[^a-zA-Z0-9_-]/g, "_")
-      : "";
-
-    const relativePath = safeSerial
-      ? `/uploads/evidence/${safeSerial}/${req.file.filename}`
-      : `/uploads/evidence/${req.file.filename}`;
+    const relativePath = buildRelativePath(req, req.file.filename);
 
     res.status(201).json({
       message: "File uploaded",
@@ -46,13 +49,8 @@ export const uploadEvidenceMultiple = async (
       return;
     }
 
-    const folder = (req.query.folder as string | undefined)?.trim();
-    const safeFolder = folder ? folder.replace(/[^a-zA-Z0-9_-]/g, "_") : "";
-
     const results = files.map((file) => {
-      const relativePath = safeFolder
-        ? `/uploads/evidence/${safeFolder}/${file.filename}`
-        : `/uploads/evidence/${file.filename}`;
+      const relativePath = buildRelativePath(req, file.filename);
       return {
         path: relativePath,
         url: relativePath,

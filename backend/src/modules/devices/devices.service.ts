@@ -67,8 +67,10 @@ const deleteProofFile = (relativePath: string | null) => {
 const deleteProofDir = (serialNumber: string | null) => {
   if (!serialNumber) return;
   const safeSerial = serialNumber.replace(/[^a-zA-Z0-9_-]/g, "_");
-  const dir = path.join(UPLOADS_DIR, "evidence", safeSerial);
-  fs.rm(dir, { recursive: true, force: true }, () => undefined);
+  // Remove both old path (evidence/) and new path (devices/) for cleanup
+  for (const sub of ["evidence", "devices"]) {
+    fs.rm(path.join(UPLOADS_DIR, sub, safeSerial), { recursive: true, force: true }, () => undefined);
+  }
 };
 
 const deviceInclude = {
