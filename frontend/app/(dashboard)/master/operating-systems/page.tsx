@@ -228,6 +228,7 @@ export default function OperatingSystemsPage() {
               </p>
               <MultiEvidenceUploadField
                 label="OS"
+                module="master"
                 folder={`os-${(form.version || "license").replace(/\s+/g, "-")}-${form.licenseType}`}
                 value={form.proofPaths}
                 onChange={paths => setField("proofPaths", paths)}

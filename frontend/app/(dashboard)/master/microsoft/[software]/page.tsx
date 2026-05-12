@@ -246,6 +246,7 @@ const { data: items, isLoading } = useMicrosoftSoftware(msType)
               </p>
               <MultiEvidenceUploadField
                 label={shortLabel}
+                module="master"
                 folder={`ms-${software}-${form.version || "license"}-${form.licenseType}`}
                 value={form.proofPaths}
                 onChange={paths => setField("proofPaths", paths)}

@@ -20,6 +20,7 @@ import api from "@/lib/api";
 
 type MultiEvidenceUploadFieldProps = {
   label: string;
+  module: string;
   folder: string;
   value: string[];
   onChange: (paths: string[]) => void;
@@ -154,6 +155,7 @@ function PendingFileRow({ file }: { file: File }) {
 // --- Main component ---
 export function MultiEvidenceUploadField({
   label,
+  module,
   folder,
   value,
   onChange,
@@ -176,7 +178,7 @@ export function MultiEvidenceUploadField({
 
       const safeFolder = folder.replace(/[^a-zA-Z0-9_-]/g, "_");
       const res = await api.post<{ files: { path: string }[] }>(
-        `/uploads/evidence-multiple?folder=${encodeURIComponent(safeFolder)}`,
+        `/uploads/evidence-multiple?module=${encodeURIComponent(module)}&folder=${encodeURIComponent(safeFolder)}`,
         formData,
         { headers: { "Content-Type": "multipart/form-data" } },
       );
