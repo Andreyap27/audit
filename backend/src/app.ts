@@ -26,7 +26,11 @@ const app = express();
 app.use(helmet());
 app.use(
   cors({
-    origin: env.FRONTEND_URL,
+    origin: (origin, cb) => {
+      // allow server-to-server (no origin) and whitelisted origins
+      if (!origin || env.ALLOWED_ORIGINS.includes(origin)) return cb(null, true);
+      cb(new Error(`CORS: origin ${origin} not allowed`));
+    },
     credentials: true,
   }),
 );
