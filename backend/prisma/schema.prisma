@@ -116,6 +116,7 @@ model Device {
 
   notes                  String?
   serialNumberProofPaths String[] @default([])
+  hardwareImagePaths     String[] @default([])
   isActive               Boolean  @default(true)
   returnedToGAAt        DateTime?
   returnedToGANote      String?

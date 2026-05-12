@@ -66,6 +66,7 @@ type DeviceFormState = {
   projectId: string;
   accessId: string;
   serialNumberProofPaths: string[];
+  hardwareImagePaths: string[];
   canBeLent: boolean;
   notes: string;
 };
@@ -104,6 +105,7 @@ export default function EditDevicePage() {
     projectId: "",
     accessId: "",
     serialNumberProofPaths: [],
+    hardwareImagePaths: [],
     canBeLent: false,
     notes: "",
   });
@@ -121,6 +123,7 @@ export default function EditDevicePage() {
       projectId: device.projectId ?? "none",
       accessId: device.accessId ?? "none",
       serialNumberProofPaths: (device as { serialNumberProofPaths?: string[] }).serialNumberProofPaths ?? [],
+      hardwareImagePaths: (device as { hardwareImagePaths?: string[] }).hardwareImagePaths ?? [],
       canBeLent: (device as { canBeLent?: boolean }).canBeLent ?? false,
       notes: (device as { notes?: string }).notes ?? "",
     });
@@ -158,6 +161,7 @@ export default function EditDevicePage() {
         projectId: isComputer ? normalizeId(form.projectId) : null,
         accessId: isComputer ? normalizeId(form.accessId) : null,
         serialNumberProofPaths: form.serialNumberProofPaths,
+        hardwareImagePaths: !isComputer ? form.hardwareImagePaths : undefined,
       });
       modal.success({ title: "Device berhasil diperbarui" });
       router.push("/devices");
@@ -326,14 +330,27 @@ export default function EditDevicePage() {
                   </Field>
                 </>
               ) : (
-                <Field className="md:col-span-2">
-                  <FieldLabel>Keterangan</FieldLabel>
-                  <Input
-                    placeholder="Contoh: Monitor 24 inch, HP LaserJet Pro..."
-                    value={form.notes}
-                    onChange={(e) => setFormField("notes", e.target.value)}
-                  />
-                </Field>
+                <>
+                  <Field className="md:col-span-2">
+                    <FieldLabel>Keterangan</FieldLabel>
+                    <Input
+                      placeholder="Contoh: Monitor 24 inch, HP LaserJet Pro..."
+                      value={form.notes}
+                      onChange={(e) => setFormField("notes", e.target.value)}
+                    />
+                  </Field>
+                  <Field className="md:col-span-2">
+                    <FieldLabel>Foto Hardware</FieldLabel>
+                    <EvidenceUploadField
+                      label="Hardware"
+                      accept="image/*"
+                      value={form.hardwareImagePaths}
+                      serialNumber={form.serialNumber}
+                      onUploaded={(paths) => setFormField("hardwareImagePaths", paths)}
+                      onError={(message) => modal.error({ title: message })}
+                    />
+                  </Field>
+                </>
               )}
             </FieldGroup>
           </CardContent>

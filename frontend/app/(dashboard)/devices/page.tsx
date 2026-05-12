@@ -72,6 +72,7 @@ type DeviceRow = {
   project: { version: string; proofPaths?: string[] } | null;
   access: { version: string; proofPaths?: string[] } | null;
   serialNumberProofPaths?: string[];
+  hardwareImagePaths?: string[];
   notes?: string | null;
 };
 
@@ -481,6 +482,32 @@ export default function DevicesPage() {
       cell: ({ row }) => (
         <span className="text-sm text-muted-foreground">{row.original.notes ?? "-"}</span>
       ),
+    },
+    {
+      id: "hardware-images",
+      header: "Foto",
+      cell: ({ row }) => {
+        const imgs = row.original.hardwareImagePaths ?? [];
+        if (imgs.length === 0) return <span className="text-xs text-muted-foreground">-</span>;
+        const apiBase = (process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:3001/api").replace(/\/api\/?$/, "");
+        return (
+          <div className="flex items-center gap-1">
+            {imgs.slice(0, 3).map((p, i) => (
+              <a key={i} href={`${apiBase}${p}`} target="_blank" rel="noopener noreferrer">
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img
+                  src={`${apiBase}${p}`}
+                  alt={`foto-${i + 1}`}
+                  className="h-8 w-8 rounded object-cover border hover:opacity-80 transition-opacity"
+                />
+              </a>
+            ))}
+            {imgs.length > 3 && (
+              <span className="text-xs text-muted-foreground">+{imgs.length - 3}</span>
+            )}
+          </div>
+        );
+      },
     },
     {
       id: "actions",

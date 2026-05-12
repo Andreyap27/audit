@@ -31,6 +31,7 @@ type EvidenceUploadFieldProps = {
   label: string;
   value?: string[] | null;
   serialNumber?: string;
+  accept?: string;
   onUploaded: (paths: string[]) => void;
   onError: (message: string) => void;
 };
@@ -39,6 +40,7 @@ export function EvidenceUploadField({
   label,
   value,
   serialNumber,
+  accept = ".txt,image/*",
   onUploaded,
   onError,
 }: EvidenceUploadFieldProps) {
@@ -164,7 +166,7 @@ export function EvidenceUploadField({
       <input
         ref={inputRef}
         type="file"
-        accept=".txt,image/*"
+        accept={accept}
         multiple
         className="hidden"
         onChange={(e) => void handleFiles(e.target.files)}

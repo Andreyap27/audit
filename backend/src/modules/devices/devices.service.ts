@@ -236,6 +236,7 @@ export const createDevice = async (
     accessId?: string;
     notes?: string;
     serialNumberProofPaths?: string[];
+    hardwareImagePaths?: string[];
   },
   userId: string,
 ) => {
@@ -316,6 +317,7 @@ export const deleteDevice = async (id: string, userId: string) => {
   });
 
   for (const p of existing.serialNumberProofPaths) deleteProofFile(p);
+  for (const p of existing.hardwareImagePaths) deleteProofFile(p);
   deleteProofDir(existing.serialNumber);
 };
 

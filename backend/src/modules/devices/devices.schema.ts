@@ -19,6 +19,7 @@ export const createDeviceSchema = z.object({
   accessId: optionalUuid,
   notes: z.string().optional(),
   serialNumberProofPaths: z.string().array().optional(),
+  hardwareImagePaths: z.string().array().optional(),
 });
 
 export const updateDeviceSchema = z.object({
@@ -35,6 +36,7 @@ export const updateDeviceSchema = z.object({
   accessId: nullableUuid,
   notes: z.string().optional(),
   serialNumberProofPaths: z.string().array().optional(),
+  hardwareImagePaths: z.string().array().optional(),
 });
 
 export const reassignDeviceSchema = z.object({

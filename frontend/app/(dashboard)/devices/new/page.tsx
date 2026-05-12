@@ -52,6 +52,7 @@ export default function NewDevicePage() {
     projectId: "",
     accessId: "",
     serialNumberProofPaths: [] as string[],
+    hardwareImagePaths: [] as string[],
     notes: "",
     canBeLent: false,
   });
@@ -98,6 +99,7 @@ export default function NewDevicePage() {
         accessId: form.accessId && form.accessId !== "none" ? form.accessId : undefined,
         notes: form.notes || undefined,
         serialNumberProofPaths: form.serialNumberProofPaths,
+        hardwareImagePaths: category === "HARDWARE" ? form.hardwareImagePaths : undefined,
       });
       modal.success({ title: "Device berhasil ditambahkan" });
       router.push("/devices");
@@ -224,14 +226,27 @@ export default function NewDevicePage() {
                   </Field>
                 </>
               ) : (
-                <Field className="md:col-span-2">
-                  <FieldLabel>Keterangan</FieldLabel>
-                  <Input
-                    placeholder="Contoh: Monitor 24 inch, HP LaserJet Pro..."
-                    value={form.notes}
-                    onChange={(e) => set("notes", e.target.value)}
-                  />
-                </Field>
+                <>
+                  <Field className="md:col-span-2">
+                    <FieldLabel>Keterangan</FieldLabel>
+                    <Input
+                      placeholder="Contoh: Monitor 24 inch, HP LaserJet Pro..."
+                      value={form.notes}
+                      onChange={(e) => set("notes", e.target.value)}
+                    />
+                  </Field>
+                  <Field className="md:col-span-2">
+                    <FieldLabel>Foto Hardware</FieldLabel>
+                    <EvidenceUploadField
+                      label="Hardware"
+                      accept="image/*"
+                      value={form.hardwareImagePaths}
+                      serialNumber={form.serialNumber}
+                      onUploaded={(paths) => set("hardwareImagePaths", paths)}
+                      onError={(message) => modal.error({ title: message })}
+                    />
+                  </Field>
+                </>
               )}
             </FieldGroup>
           </CardContent>
