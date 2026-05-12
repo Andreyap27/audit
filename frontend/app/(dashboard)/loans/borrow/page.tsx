@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useCallback } from "react";
+import { useState, useCallback, useEffect } from "react";
 import { QRScanner } from "@/components/loans/qr-scanner";
 import { StepWizard } from "@/components/loans/step-wizard";
 import { useLoanBySerial, useCreateLoan } from "@/hooks/use-loans";
