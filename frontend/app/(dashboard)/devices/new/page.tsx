@@ -86,7 +86,7 @@ export default function NewDevicePage() {
         serialNumber: form.serialNumber,
         userName: form.userName || undefined,
         category,
-        canBeLent: category === "COMPUTER" ? form.canBeLent : false,
+        canBeLent: form.canBeLent,
         departmentId: form.departmentId,
         unitTypeId: form.unitTypeId || undefined,
         operatingSystemId:
@@ -227,6 +227,18 @@ export default function NewDevicePage() {
                 </>
               ) : (
                 <>
+                  <Field>
+                    <FieldLabel>Dapat Dipinjam</FieldLabel>
+                    <div className="flex items-center gap-3 h-9">
+                      <Switch
+                        checked={form.canBeLent}
+                        onCheckedChange={(v) => set("canBeLent", v)}
+                      />
+                      <span className="text-sm text-muted-foreground">
+                        {form.canBeLent ? "Ya, dapat dipinjam" : "Tidak dapat dipinjam"}
+                      </span>
+                    </div>
+                  </Field>
                   <Field className="md:col-span-2">
                     <FieldLabel>Keterangan</FieldLabel>
                     <Input

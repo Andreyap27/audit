@@ -153,7 +153,7 @@ export default function EditDevicePage() {
         userName: form.userName || undefined,
         departmentId: form.departmentId || undefined,
         unitTypeId: normalizeId(form.unitTypeId),
-        canBeLent: isComputer ? form.canBeLent : undefined,
+        canBeLent: form.canBeLent,
         notes: form.notes || undefined,
         operatingSystemId: isComputer ? normalizeId(form.operatingSystemId) : null,
         officeId: isComputer ? normalizeId(form.officeId) : null,
@@ -331,6 +331,18 @@ export default function EditDevicePage() {
                 </>
               ) : (
                 <>
+                  <Field>
+                    <FieldLabel>Dapat Dipinjam</FieldLabel>
+                    <div className="flex items-center gap-3 h-9">
+                      <Switch
+                        checked={form.canBeLent}
+                        onCheckedChange={(v) => setFormField("canBeLent", v)}
+                      />
+                      <span className="text-sm text-muted-foreground">
+                        {form.canBeLent ? "Ya, dapat dipinjam" : "Tidak dapat dipinjam"}
+                      </span>
+                    </div>
+                  </Field>
                   <Field className="md:col-span-2">
                     <FieldLabel>Keterangan</FieldLabel>
                     <Input
