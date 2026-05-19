@@ -43,8 +43,8 @@ import {
   XCircle,
   PackageX,
   FileText,
+  Image as ImageIcon,
 } from "lucide-react";
-import { HoverCard, HoverCardContent, HoverCardTrigger } from "@/components/ui/hover-card";
 import { useDevices, useDeleteDevice, useReturnDeviceToGA } from "@/hooks/use-devices";
 import {
   useDepartments,
@@ -274,44 +274,27 @@ export default function DevicesPage() {
     paths: string[],
     alwaysClickable = false,
   ) => {
-    const hasFiles = paths.length > 0;
-    const trigger = (
+    if (paths.length === 0 && !alwaysClickable) return <span>{value}</span>;
+    return (
       <button
         type="button"
-        className={hasFiles || alwaysClickable ? "text-left underline underline-offset-2 hover:text-primary" : "text-left"}
-        onClick={hasFiles || alwaysClickable ? () => setPreview({ title: label, paths, idx: 0 }) : undefined}
+        className="text-left underline underline-offset-2 hover:text-primary"
+        onClick={() => setPreview({ title: label, paths, idx: 0 })}
       >
         {value}
       </button>
     );
-    if (!hasFiles) return trigger;
+  };
+
+  const renderSnFileIcons = (paths: string[]) => {
+    if (paths.length === 0) return null;
+    const hasDoc = paths.some((p) => /\.txt$/i.test(p));
+    const hasImg = paths.some((p) => /\.(png|jpe?g|gif|webp)$/i.test(p));
     return (
-      <HoverCard openDelay={200} closeDelay={100}>
-        <HoverCardTrigger asChild>{trigger}</HoverCardTrigger>
-        <HoverCardContent className="w-auto max-w-xs p-2" align="start">
-          <p className="text-xs font-medium text-muted-foreground mb-2">{label} ({paths.length} file)</p>
-          <div className="flex flex-wrap gap-1.5">
-            {paths.map((p, i) => {
-              const isImg = /\.(png|jpe?g|gif|webp)$/i.test(p);
-              const name = decodeURIComponent(p.split("/").pop() ?? p);
-              return isImg ? (
-                // eslint-disable-next-line @next/next/no-img-element
-                <img
-                  key={i}
-                  src={`${FILE_BASE_URL}${p}`}
-                  alt={name}
-                  className="h-20 w-20 rounded object-cover border"
-                />
-              ) : (
-                <div key={i} className="flex items-center gap-1.5 rounded border bg-muted/50 px-2 py-1.5 text-xs max-w-[180px]">
-                  <FileText className="h-3.5 w-3.5 shrink-0 text-orange-500" />
-                  <span className="truncate">{name}</span>
-                </div>
-              );
-            })}
-          </div>
-        </HoverCardContent>
-      </HoverCard>
+      <div className="flex items-center gap-1">
+        {hasDoc && <FileText className="h-3.5 w-3.5 text-orange-500 shrink-0" />}
+        {hasImg && <ImageIcon className="h-3.5 w-3.5 text-blue-500 shrink-0" />}
+      </div>
     );
   };
 
@@ -353,6 +336,12 @@ export default function DevicesPage() {
           </span>
         </div>
       ),
+    },
+    {
+      id: "sn-files",
+      header: "File",
+      size: 60,
+      cell: ({ row }) => renderSnFileIcons(row.original.serialNumberProofPaths ?? []),
     },
     {
       accessorKey: "userName",
@@ -494,6 +483,12 @@ export default function DevicesPage() {
           </span>
         </div>
       ),
+    },
+    {
+      id: "sn-files",
+      header: "File",
+      size: 60,
+      cell: ({ row }) => renderSnFileIcons(row.original.serialNumberProofPaths ?? []),
     },
     {
       accessorKey: "assetCode",
