@@ -484,6 +484,16 @@ export default function DevicesPage() {
       ),
     },
     {
+      id: "canBeLent",
+      header: "Dipinjam",
+      cell: ({ row }) =>
+        row.original.canBeLent ? (
+          <CheckCircle2 className="h-4 w-4 text-green-500" />
+        ) : (
+          <XCircle className="h-4 w-4 text-muted-foreground" />
+        ),
+    },
+    {
       id: "hardware-images",
       header: "Foto",
       cell: ({ row }) => {
