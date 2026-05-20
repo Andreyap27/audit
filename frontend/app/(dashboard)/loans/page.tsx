@@ -51,6 +51,7 @@ type LoanRow = {
   status: "BORROWED" | "RETURNED";
   device: {
     serialNumber: string;
+    userName: string | null;
     unitType: { name: string } | null;
     department: { name: string } | null;
   } | null;
@@ -108,6 +109,13 @@ export default function LoansPage() {
         <Badge variant="outline">
           {row.original.device?.unitType?.name ?? "-"}
         </Badge>
+      ),
+    },
+    {
+      id: "deviceUser",
+      header: "Nama User",
+      cell: ({ row }) => (
+        <span className="text-sm">{row.original.device?.userName ?? "-"}</span>
       ),
     },
     {
