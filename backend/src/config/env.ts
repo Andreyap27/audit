@@ -10,7 +10,7 @@ const parseOrigins = (raw: string): string[] =>
 export const env = {
   DATABASE_URL: required("DATABASE_URL"),
   JWT_SECRET: required("JWT_SECRET"),
-  JWT_EXPIRES_IN: process.env.JWT_EXPIRES_IN || "7d",
+  JWT_EXPIRES_IN: process.env.JWT_EXPIRES_IN || "12h",
   PORT: parseInt(process.env.PORT || "3001", 10),
   FRONTEND_URL: process.env.FRONTEND_URL || "http://localhost:3000",
   ALLOWED_ORIGINS: parseOrigins(
