@@ -27,7 +27,8 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { Textarea } from "@/components/ui/textarea";
 import { DataTable } from "@/components/ui/data-table";
 import { Checkbox } from "@/components/ui/checkbox";
-import Barcode from "react-barcode";
+import { format } from "date-fns";
+import { id as idLocale } from "date-fns/locale";
 import {
   Plus,
   Download,
@@ -66,6 +67,7 @@ type DeviceRow = {
   userName: string | null;
   category: "COMPUTER" | "HARDWARE";
   canBeLent: boolean;
+  createdAt: string;
   department: { code: string } | null;
   unitType: { name: string } | null;
   operatingSystem: { version: string; licenseType: string; proofPaths?: string[] } | null;
@@ -300,20 +302,12 @@ export default function DevicesPage() {
 
   const computerColumns: ColumnDef<DeviceRow>[] = [
     {
-      id: "barcode",
-      header: "Barcode",
-      size: 120,
+      id: "createdAt",
+      header: "Tgl Dibuat",
       cell: ({ row }) => (
-        <div className="w-[110px]">
-          <Barcode
-            value={row.original.serialNumber || " "}
-            width={0.9}
-            height={30}
-            fontSize={0}
-            margin={0}
-            displayValue={false}
-          />
-        </div>
+        <span className="text-sm text-muted-foreground whitespace-nowrap">
+          {format(new Date(row.original.createdAt), "dd MMMM yyyy", { locale: idLocale })}
+        </span>
       ),
     },
     {
@@ -447,20 +441,12 @@ export default function DevicesPage() {
 
   const hardwareColumns: ColumnDef<DeviceRow>[] = [
     {
-      id: "barcode",
-      header: "Barcode",
-      size: 120,
+      id: "createdAt",
+      header: "Tgl Dibuat",
       cell: ({ row }) => (
-        <div className="w-[110px]">
-          <Barcode
-            value={row.original.serialNumber || " "}
-            width={0.9}
-            height={30}
-            fontSize={0}
-            margin={0}
-            displayValue={false}
-          />
-        </div>
+        <span className="text-sm text-muted-foreground whitespace-nowrap">
+          {format(new Date(row.original.createdAt), "dd MMMM yyyy", { locale: idLocale })}
+        </span>
       ),
     },
     {
