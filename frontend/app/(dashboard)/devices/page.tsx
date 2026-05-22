@@ -304,6 +304,9 @@ export default function DevicesPage() {
     {
       id: "createdAt",
       header: "Tgl Dibuat",
+      enableSorting: true,
+      sortingFn: (a, b) =>
+        new Date(a.original.createdAt).getTime() - new Date(b.original.createdAt).getTime(),
       cell: ({ row }) => (
         <span className="text-sm text-muted-foreground whitespace-nowrap">
           {format(new Date(row.original.createdAt), "dd MMMM yyyy", { locale: idLocale })}
@@ -345,6 +348,9 @@ export default function DevicesPage() {
     {
       id: "dept",
       header: "Dept",
+      enableSorting: true,
+      sortingFn: (a, b) =>
+        (a.original.department?.code ?? "").localeCompare(b.original.department?.code ?? ""),
       cell: ({ row }) => (
         <Badge variant="outline">{row.original.department?.code ?? "-"}</Badge>
       ),
@@ -443,6 +449,9 @@ export default function DevicesPage() {
     {
       id: "createdAt",
       header: "Tgl Dibuat",
+      enableSorting: true,
+      sortingFn: (a, b) =>
+        new Date(a.original.createdAt).getTime() - new Date(b.original.createdAt).getTime(),
       cell: ({ row }) => (
         <span className="text-sm text-muted-foreground whitespace-nowrap">
           {format(new Date(row.original.createdAt), "dd MMMM yyyy", { locale: idLocale })}
@@ -484,6 +493,9 @@ export default function DevicesPage() {
     {
       id: "dept",
       header: "Dept",
+      enableSorting: true,
+      sortingFn: (a, b) =>
+        (a.original.department?.code ?? "").localeCompare(b.original.department?.code ?? ""),
       cell: ({ row }) => (
         <Badge variant="outline">{row.original.department?.code ?? "-"}</Badge>
       ),
