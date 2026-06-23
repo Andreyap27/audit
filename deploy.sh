@@ -33,7 +33,7 @@ ok "Git pull berhasil"
 # ─── 2. Install dependencies backend ────────────────────────────────────────
 log "Step 2/5 — Install dependencies backend..."
 cd "$BACKEND_DIR"
-npm install --omit=dev || error "npm install backend gagal"
+npm install || error "npm install backend gagal"
 ok "Dependencies backend selesai"
 
 # ─── 3. Build backend ────────────────────────────────────────────────────────
@@ -44,7 +44,7 @@ ok "Build backend selesai"
 # ─── 4. Install dependencies & build frontend ────────────────────────────────
 log "Step 4/5 — Install dependencies & build frontend..."
 cd "$FRONTEND_DIR"
-npm install --omit=dev || error "npm install frontend gagal"
+npm install || error "npm install frontend gagal"
 npm run build || error "Build frontend gagal"
 ok "Build frontend selesai"
 
