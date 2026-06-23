@@ -51,6 +51,9 @@ coverage/
 # ── TypeScript ────────────────────────────────────────────
 *.tsbuildinfo
 
+# ── Deploy Script ─────────────────────────────────────────
+deploy.sh
+
 # ── Uploads & Temp Files ──────────────────────────────────
 backend/uploads/
 tmp/
