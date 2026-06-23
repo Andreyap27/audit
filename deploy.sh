@@ -27,7 +27,9 @@ echo ""
 # ─── 1. Git Pull ─────────────────────────────────────────────────────────────
 log "Step 1/5 — Git pull..."
 cd "$SCRIPT_DIR"
+git stash 2>/dev/null || true
 git pull || error "Git pull gagal"
+git stash pop 2>/dev/null || true
 ok "Git pull berhasil"
 
 # ─── 2. Install dependencies backend ────────────────────────────────────────
