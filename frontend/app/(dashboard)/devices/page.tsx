@@ -621,7 +621,7 @@ export default function DevicesPage() {
             <div className="relative w-full max-w-xs">
               <Search className="pointer-events-none absolute left-2.5 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
               <Input
-                placeholder="Cari serial number atau nama user..."
+                placeholder={activeTab === "HARDWARE" ? "Cari serial number atau keterangan..." : "Cari serial number atau nama user..."}
                 className="h-9 pl-8 text-sm"
                 value={search}
                 onChange={(e) => {

@@ -196,6 +196,7 @@ export const getDevices = async (filters: {
       { serialNumber: { contains: search, mode: "insensitive" } },
       { userName: { contains: search, mode: "insensitive" } },
       { assetCode: { contains: search, mode: "insensitive" } },
+      { notes: { contains: search, mode: "insensitive" } },
     ];
   }
 
