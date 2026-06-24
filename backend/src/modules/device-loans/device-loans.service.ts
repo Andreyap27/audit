@@ -64,8 +64,22 @@ export const returnLoan = async (id: string, input: ReturnLoanInput) => {
   });
 };
 
+const buildLoanOrderBy = (sortBy?: string, sortOrder: "asc" | "desc" = "desc") => {
+  const dir = sortOrder;
+  switch (sortBy) {
+    case "borrowedAt":              return { borrowedAt: dir };
+    case "returnedAt":              return { returnedAt: dir };
+    case "borrowerName":            return { borrowerName: dir };
+    case "status":                  return { status: dir };
+    case "note":                    return { note: dir };
+    case "device.serialNumber":     return { device: { serialNumber: dir } };
+    default:                        return { borrowedAt: "desc" as const };
+  }
+};
+
 export const getLoans = async (params: {
   page?: number; limit?: number; status?: string; search?: string;
+  sortBy?: string; sortOrder?: "asc" | "desc";
 }) => {
   const page = params.page ?? 1;
   const limit = params.limit ?? 20;
@@ -83,7 +97,7 @@ export const getLoans = async (params: {
   const [data, total] = await prisma.$transaction([
     prisma.deviceLoan.findMany({
       where, skip, take: limit,
-      orderBy: { borrowedAt: "desc" },
+      orderBy: buildLoanOrderBy(params.sortBy, params.sortOrder),
       include: { device: { include: deviceInclude } },
     }),
     prisma.deviceLoan.count({ where }),

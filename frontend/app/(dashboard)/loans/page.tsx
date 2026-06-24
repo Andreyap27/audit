@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import type { ColumnDef } from "@tanstack/react-table";
+import type { ColumnDef, SortingState } from "@tanstack/react-table";
 import { useLoans } from "@/hooks/use-loans";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -76,14 +76,25 @@ export default function LoansPage() {
   const [search, setSearch] = useState("");
   const [status, setStatus] = useState("all");
   const [previewLoan, setPreviewLoan] = useState<PhotoPreview | null>(null);
+  const [sorting, setSorting] = useState<SortingState>([]);
 
   const resetPage = () => setPage(1);
+
+  const handleSortingChange = (newSorting: SortingState) => {
+    setSorting(newSorting);
+    setPage(1);
+  };
+
+  const sortBy = sorting[0]?.id;
+  const sortOrder = sorting[0]?.desc ? "desc" : "asc";
 
   const { data, isLoading } = useLoans({
     page,
     limit: PAGE_SIZE,
     search: search || undefined,
     status: status !== "all" ? status : undefined,
+    sortBy: sortBy || undefined,
+    sortOrder: sortBy ? (sortOrder as "asc" | "desc") : undefined,
   });
 
   const loans = data?.data ?? [];
@@ -293,6 +304,9 @@ export default function LoansPage() {
           isLoading={isLoading}
           searchable={false}
           paginated={false}
+          manualSorting
+          externalSorting={sorting}
+          onExternalSortingChange={handleSortingChange}
         />
 
         {/* Pagination footer */}

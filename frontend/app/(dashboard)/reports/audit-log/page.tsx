@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import type { ColumnDef } from "@tanstack/react-table";
+import type { ColumnDef, SortingState } from "@tanstack/react-table";
 import { Card } from "@/components/ui/card";
 import { DataTable } from "@/components/ui/data-table";
 import { Badge } from "@/components/ui/badge";
@@ -65,6 +65,14 @@ export default function AuditLogPage() {
   const [action, setAction] = useState("all");
   const [dateFrom, setDateFrom] = useState("");
   const [dateTo, setDateTo] = useState("");
+  const [sorting, setSorting] = useState<SortingState>([]);
+
+  const handleSortingChange = (newSorting: SortingState) => {
+    setSorting(newSorting);
+    setPage(1);
+  };
+  const sortBy = sorting[0]?.id;
+  const sortOrder = sorting[0]?.desc ? "desc" : "asc";
 
   const resetPage = () => setPage(1);
   const isAnyFilter =
@@ -85,6 +93,8 @@ export default function AuditLogPage() {
     action: action !== "all" ? action : undefined,
     dateFrom: dateFrom || undefined,
     dateTo: dateTo || undefined,
+    sortBy: sortBy || undefined,
+    sortOrder: sortBy ? (sortOrder as "asc" | "desc") : undefined,
   });
 
   const logs: LogRow[] = data?.data ?? [];
@@ -234,6 +244,9 @@ export default function AuditLogPage() {
           isLoading={isLoading}
           searchable={false}
           paginated={false}
+          manualSorting
+          externalSorting={sorting}
+          onExternalSortingChange={handleSortingChange}
         />
 
         {/* Pagination */}

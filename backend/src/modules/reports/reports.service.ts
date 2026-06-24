@@ -275,8 +275,22 @@ export const getLoanReport = async (params: {
   search?: string;
   page: number;
   limit: number;
+  sortBy?: string;
+  sortOrder?: "asc" | "desc";
 }) => {
-  const { status, dateFrom, dateTo, search, page, limit } = params;
+  const { status, dateFrom, dateTo, search, page, limit, sortBy, sortOrder = "desc" } = params;
+  const dir = sortOrder;
+  const loanOrderBy = (() => {
+    switch (sortBy) {
+      case "borrowerName":        return { borrowerName: dir };
+      case "borrowedAt":          return { borrowedAt: dir };
+      case "returnedAt":          return { returnedAt: dir };
+      case "status":              return { status: dir };
+      case "note":                return { note: dir };
+      case "device.serialNumber": return { device: { serialNumber: dir } };
+      default:                    return { borrowedAt: "desc" as const };
+    }
+  })();
   const skip = (page - 1) * limit;
 
   const where: Record<string, unknown> = {};
@@ -299,7 +313,7 @@ export const getLoanReport = async (params: {
       where,
       skip,
       take: limit,
-      orderBy: { borrowedAt: "desc" },
+      orderBy: loanOrderBy,
       include: { device: { include: { department: true, unitType: true } } },
     }),
     prisma.deviceLoan.count({ where }),
@@ -399,8 +413,22 @@ export const getReturnedToGA = async (params: {
   dateTo?: string;
   page: number;
   limit: number;
+  sortBy?: string;
+  sortOrder?: "asc" | "desc";
 }) => {
-  const { departmentId, search, dateFrom, dateTo, page, limit } = params;
+  const { departmentId, search, dateFrom, dateTo, page, limit, sortBy, sortOrder = "desc" } = params;
+  const dir = sortOrder;
+  const gaOrderBy = (() => {
+    switch (sortBy) {
+      case "assetCode":      return { assetCode: dir };
+      case "serialNumber":   return { serialNumber: dir };
+      case "category":       return { category: dir };
+      case "lastUser":       return { userName: dir };
+      case "returnedToGAAt": return { returnedToGAAt: dir };
+      case "returnToGANote": return { returnedToGANote: dir };
+      default:               return { returnedToGAAt: "desc" as const };
+    }
+  })();
   const skip = (page - 1) * limit;
 
   const where: Record<string, unknown> = {
@@ -428,7 +456,7 @@ export const getReturnedToGA = async (params: {
     prisma.device.findMany({
       where,
       include: { department: true, unitType: true },
-      orderBy: { returnedToGAAt: "desc" },
+      orderBy: gaOrderBy,
       skip,
       take: limit,
     }),
@@ -508,8 +536,20 @@ export const getAuditLog = async (params: {
   dateTo?: string;
   page: number;
   limit: number;
+  sortBy?: string;
+  sortOrder?: "asc" | "desc";
 }) => {
-  const { action, userId, search, dateFrom, dateTo, page, limit } = params;
+  const { action, userId, search, dateFrom, dateTo, page, limit, sortBy, sortOrder = "desc" } = params;
+  const dir = sortOrder;
+  const auditOrderBy = (() => {
+    switch (sortBy) {
+      case "action":    return { action: dir };
+      case "tableName": return { tableName: dir };
+      case "recordId":  return { recordId: dir };
+      case "createdAt": return { createdAt: dir };
+      default:          return { createdAt: "desc" as const };
+    }
+  })();
   const skip = (page - 1) * limit;
 
   const where: Record<string, unknown> = {};
@@ -535,7 +575,7 @@ export const getAuditLog = async (params: {
       include: { user: { select: { id: true, username: true } } },
       skip,
       take: limit,
-      orderBy: { createdAt: "desc" },
+      orderBy: auditOrderBy,
     }),
     prisma.auditLog.count({ where }),
   ]);

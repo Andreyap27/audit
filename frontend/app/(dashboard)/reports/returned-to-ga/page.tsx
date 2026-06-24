@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import type { ColumnDef } from "@tanstack/react-table";
+import type { ColumnDef, SortingState } from "@tanstack/react-table";
 import { Card } from "@/components/ui/card";
 import { DataTable } from "@/components/ui/data-table";
 import { Button } from "@/components/ui/button";
@@ -53,6 +53,14 @@ export default function ReturnedToGAPage() {
   const [departmentId, setDepartmentId] = useState("all");
   const [dateFrom, setDateFrom] = useState("");
   const [dateTo, setDateTo] = useState("");
+  const [sorting, setSorting] = useState<SortingState>([]);
+
+  const handleSortingChange = (newSorting: SortingState) => {
+    setSorting(newSorting);
+    setPage(1);
+  };
+  const sortBy = sorting[0]?.id;
+  const sortOrder = sorting[0]?.desc ? "desc" : "asc";
 
   const modal = useGlobalModal();
   const exportMutation = useExportReturnedToGA();
@@ -77,6 +85,8 @@ export default function ReturnedToGAPage() {
     departmentId: departmentId !== "all" ? departmentId : undefined,
     dateFrom: dateFrom || undefined,
     dateTo: dateTo || undefined,
+    sortBy: sortBy || undefined,
+    sortOrder: sortBy ? (sortOrder as "asc" | "desc") : undefined,
   });
 
   const rows: ReturnedRow[] = data?.data ?? [];
@@ -274,6 +284,9 @@ export default function ReturnedToGAPage() {
           isLoading={isLoading}
           searchable={false}
           paginated={false}
+          manualSorting
+          externalSorting={sorting}
+          onExternalSortingChange={handleSortingChange}
         />
 
         {/* Pagination */}

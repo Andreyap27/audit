@@ -11,6 +11,8 @@ const auditLogFilterSchema = z.object({
   dateTo: z.string().optional(),
   page: z.coerce.number().int().positive().default(1),
   limit: z.coerce.number().int().positive().max(100).default(20),
+  sortBy: z.enum(["action", "tableName", "recordId", "createdAt"]).optional(),
+  sortOrder: z.enum(["asc", "desc"]).optional().default("desc"),
 });
 
 const softwareTypeSchema = z.object({
@@ -70,6 +72,8 @@ const loanReportFilterSchema = z.object({
   search: z.string().optional(),
   page: z.coerce.number().int().positive().default(1),
   limit: z.coerce.number().int().positive().max(100).default(20),
+  sortBy: z.enum(["borrowerName", "borrowedAt", "returnedAt", "status", "note", "device.serialNumber"]).optional(),
+  sortOrder: z.enum(["asc", "desc"]).optional().default("desc"),
 });
 
 export const getLoanReport = async (
@@ -118,6 +122,8 @@ const returnedToGAFilterSchema = z.object({
   dateTo: z.string().optional(),
   page: z.coerce.number().int().positive().default(1),
   limit: z.coerce.number().int().positive().max(100).default(20),
+  sortBy: z.enum(["assetCode", "serialNumber", "category", "lastUser", "returnedToGAAt", "returnToGANote"]).optional(),
+  sortOrder: z.enum(["asc", "desc"]).optional().default("desc"),
 });
 
 export const getReturnedToGA = async (

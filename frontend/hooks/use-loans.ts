@@ -6,6 +6,8 @@ export interface LoanFilters {
   limit?: number;
   status?: string;
   search?: string;
+  sortBy?: string;
+  sortOrder?: "asc" | "desc";
 }
 
 export const useLoans = (filters: LoanFilters = {}) =>

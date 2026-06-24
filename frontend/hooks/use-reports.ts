@@ -29,6 +29,8 @@ export interface LoanReportFilters {
   search?: string;
   page?: number;
   limit?: number;
+  sortBy?: string;
+  sortOrder?: "asc" | "desc";
 }
 
 export const useLoanReport = (params: LoanReportFilters) =>
@@ -61,6 +63,8 @@ export interface ReturnedToGAFilters {
   dateTo?: string;
   page?: number;
   limit?: number;
+  sortBy?: string;
+  sortOrder?: "asc" | "desc";
 }
 
 export const useReturnedToGA = (params: ReturnedToGAFilters) =>
@@ -94,6 +98,8 @@ export const useAuditLog = (params: {
   dateTo?: string;
   page?: number;
   limit?: number;
+  sortBy?: string;
+  sortOrder?: "asc" | "desc";
 }) =>
   useQuery({
     queryKey: ["reports", "audit-log", params],

@@ -56,6 +56,7 @@ fi
 echo ""
 echo "[5/7] Installing frontend packages..."
 cd "$REPO_DIR/frontend"
+rm -rf node_modules package-lock.json
 npm install --legacy-peer-deps
 chmod -R +x node_modules/.bin/
 echo "✓ Frontend packages ok"

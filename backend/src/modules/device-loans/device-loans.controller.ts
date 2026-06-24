@@ -5,12 +5,14 @@ import { createLoanSchema, returnLoanSchema } from "./device-loans.schema";
 
 export const getAll = async (req: AuthRequest, res: Response, next: NextFunction): Promise<void> => {
   try {
-    const { page, limit, status, search } = req.query;
+    const { page, limit, status, search, sortBy, sortOrder } = req.query;
     const result = await service.getLoans({
       page: page ? Number(page) : undefined,
       limit: limit ? Number(limit) : undefined,
       status: status as string | undefined,
       search: search as string | undefined,
+      sortBy: sortBy as string | undefined,
+      sortOrder: sortOrder as "asc" | "desc" | undefined,
     });
     res.json(result);
   } catch (err) { next(err); }
