@@ -4,6 +4,7 @@ import {
   type ColumnDef,
   type SortingState,
   type PaginationState,
+  type Updater,
   flexRender,
   getCoreRowModel,
   getSortedRowModel,
@@ -38,6 +39,9 @@ interface DataTableProps<TData, TValue> {
   searchable?: boolean;
   paginated?: boolean;
   defaultPageSize?: number;
+  manualSorting?: boolean;
+  externalSorting?: SortingState;
+  onExternalSortingChange?: (sorting: SortingState) => void;
 }
 
 export function DataTable<TData, TValue>({
@@ -47,25 +51,36 @@ export function DataTable<TData, TValue>({
   searchable = true,
   paginated = true,
   defaultPageSize = 25,
+  manualSorting = false,
+  externalSorting,
+  onExternalSortingChange,
 }: DataTableProps<TData, TValue>) {
-  const [sorting, setSorting] = useState<SortingState>([]);
+  const [internalSorting, setInternalSorting] = useState<SortingState>([]);
+  const sorting = manualSorting ? (externalSorting ?? []) : internalSorting;
   const [globalFilter, setGlobalFilter] = useState("");
   const [pagination, setPagination] = useState<PaginationState>({
     pageIndex: 0,
     pageSize: defaultPageSize,
   });
 
+  const handleSortingChange = (updater: Updater<SortingState>) => {
+    const next = typeof updater === "function" ? updater(sorting) : updater;
+    if (manualSorting) onExternalSortingChange?.(next);
+    else setInternalSorting(next);
+  };
+
   const table = useReactTable({
     data,
     columns,
     state: { sorting, globalFilter, pagination },
-    onSortingChange: setSorting,
+    onSortingChange: handleSortingChange,
     onGlobalFilterChange: setGlobalFilter,
     onPaginationChange: setPagination,
     getCoreRowModel: getCoreRowModel(),
     getSortedRowModel: getSortedRowModel(),
     getFilteredRowModel: getFilteredRowModel(),
     getPaginationRowModel: getPaginationRowModel(),
+    manualSorting,
   });
 
   const { pageIndex, pageSize } = table.getState().pagination;

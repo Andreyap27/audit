@@ -53,6 +53,7 @@ coverage/
 
 # ── Deploy Script ─────────────────────────────────────────
 deploy.sh
+ecosystem.config.js
 
 # ── Uploads & Temp Files ──────────────────────────────────
 backend/uploads/

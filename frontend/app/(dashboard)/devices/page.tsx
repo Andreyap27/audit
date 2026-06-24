@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect, useRef } from "react";
-import type { ColumnDef } from "@tanstack/react-table";
+import type { ColumnDef, SortingState } from "@tanstack/react-table";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -96,6 +96,7 @@ export default function DevicesPage() {
   const [osFilter, setOsFilter] = useState("all");
   const [officeFilter, setOfficeFilter] = useState("all");
   const [page, setPage] = useState(1);
+  const [sorting, setSorting] = useState<SortingState>([]);
   const [preview, setPreview] = useState<{ title: string; paths: string[]; idx: number } | null>(null);
   const [previewText, setPreviewText] = useState<string | null>(null);
   const [returnToGATarget, setReturnToGATarget] = useState<{ id: string; serialNumber: string } | null>(null);
@@ -166,11 +167,17 @@ export default function DevicesPage() {
     setOsFilter("all");
     setOfficeFilter("all");
     setPage(1);
+    setSorting([]);
   };
 
   const handleTabChange = (tab: string) => {
     setActiveTab(tab as "COMPUTER" | "HARDWARE");
     resetFilters();
+  };
+
+  const handleSortingChange = (newSorting: SortingState) => {
+    setSorting(newSorting);
+    setPage(1);
   };
 
   const isAnyFilter =
@@ -179,6 +186,9 @@ export default function DevicesPage() {
     unitFilter !== "all" ||
     osFilter !== "all" ||
     officeFilter !== "all";
+
+  const sortBy = sorting[0]?.id;
+  const sortOrder = sorting[0]?.desc ? "desc" : "asc";
 
   const filters = {
     category: activeTab,
@@ -189,6 +199,8 @@ export default function DevicesPage() {
     officeId: officeFilter !== "all" && activeTab === "COMPUTER" ? officeFilter : undefined,
     page,
     limit: PAGE_SIZE,
+    sortBy: sortBy || undefined,
+    sortOrder: sortBy ? (sortOrder as "asc" | "desc") : undefined,
   };
 
   const { data, isLoading } = useDevices(filters);
@@ -691,6 +703,9 @@ export default function DevicesPage() {
           isLoading={isLoading}
           searchable={false}
           paginated={false}
+          manualSorting
+          externalSorting={sorting}
+          onExternalSortingChange={handleSortingChange}
         />
 
         {paginationFooter}

@@ -64,4 +64,6 @@ export const deviceFilterSchema = z.object({
   search: z.string().optional(),
   page: z.coerce.number().int().positive().default(1),
   limit: z.coerce.number().int().positive().max(100).default(20),
+  sortBy: z.enum(["createdAt", "serialNumber", "userName", "dept", "notes", "assetCode"]).optional(),
+  sortOrder: z.enum(["asc", "desc"]).optional().default("asc"),
 });

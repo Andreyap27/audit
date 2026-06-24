@@ -124,6 +124,19 @@ const buildHistorySnapshot = (device: {
   serialNumberProofPath: device.serialNumberProofPaths[0] ?? null,
 });
 
+const buildOrderBy = (sortBy?: string, sortOrder: "asc" | "desc" = "asc") => {
+  const dir = sortOrder;
+  switch (sortBy) {
+    case "createdAt":    return [{ createdAt: dir }];
+    case "serialNumber": return [{ serialNumber: dir }];
+    case "userName":     return [{ userName: dir }];
+    case "dept":         return [{ department: { code: dir } }];
+    case "notes":        return [{ notes: dir }];
+    case "assetCode":    return [{ assetCode: dir }];
+    default:             return [{ department: { code: "asc" as const } }, { serialNumber: "asc" as const }];
+  }
+};
+
 export const getDevices = async (filters: {
   category?: string;
   departmentId?: string;
@@ -136,10 +149,13 @@ export const getDevices = async (filters: {
   search?: string;
   page: number;
   limit: number;
+  sortBy?: string;
+  sortOrder?: "asc" | "desc";
 }) => {
   const {
     search, page, limit,
     operatingSystemId, officeId, visioId, projectId, accessId,
+    sortBy, sortOrder,
     ...rest
   } = filters;
   const skip = (page - 1) * limit;
@@ -206,7 +222,7 @@ export const getDevices = async (filters: {
       include: deviceInclude,
       skip,
       take: limit,
-      orderBy: [{ department: { code: "asc" } }, { serialNumber: "asc" }],
+      orderBy: buildOrderBy(sortBy, sortOrder),
     }),
     prisma.device.count({ where }),
   ]);

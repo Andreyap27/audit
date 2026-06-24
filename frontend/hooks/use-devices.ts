@@ -12,6 +12,8 @@ export interface DeviceFilters {
   search?: string;
   page?: number;
   limit?: number;
+  sortBy?: string;
+  sortOrder?: "asc" | "desc";
 }
 
 export const useDevices = (filters: DeviceFilters = {}) =>
