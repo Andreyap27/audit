@@ -75,6 +75,18 @@ export const useReturnDeviceToGA = () => {
   });
 };
 
+export const useReactivateDevice = () => {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: ({ id, note }: { id: string; note: string }) =>
+      api.patch(`/devices/${id}/reactivate`, { note }).then((r) => r.data),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["devices"] });
+      qc.invalidateQueries({ queryKey: ["reports", "returned-to-ga"] });
+    },
+  });
+};
+
 export const useUploadEvidence = () => {
   return useMutation({
     mutationFn: ({ file, module, folder }: { file: File; module: string; folder?: string }) => {

@@ -27,6 +27,8 @@ import { Plus, Pencil, Trash2, Key } from "lucide-react"
 import { useOperatingSystems, useCreateOs, useUpdateOs, useDeleteOs, useVersionMaster } from "@/hooks/use-master"
 import { useGlobalModal } from "@/lib/global-modal"
 import { MultiEvidenceUploadField } from "@/components/devices/multi-evidence-upload-field"
+import { format } from "date-fns"
+import { id as idLocale } from "date-fns/locale"
 
 type OsRow = {
   id: string
@@ -34,6 +36,8 @@ type OsRow = {
   licenseType: string
   serialNumber?: string | null
   proofPaths?: string[]
+  createdAt?: string | null
+  usedByDeviceId?: string | null
 }
 
 type OsForm = {
@@ -143,6 +147,14 @@ export default function OperatingSystemsPage() {
       },
     },
     {
+      accessorKey: "createdAt",
+      header: "Tgl Dibuat",
+      cell: ({ row }) =>
+        row.original.createdAt
+          ? format(new Date(row.original.createdAt), "dd MMM yyyy", { locale: idLocale })
+          : "-",
+    },
+    {
       id: "actions",
       header: "Aksi",
       cell: ({ row }) => (
@@ -174,6 +186,9 @@ export default function OperatingSystemsPage() {
             columns={columns}
             data={(osList ?? []) as OsRow[]}
             isLoading={isLoading}
+            getRowClassName={(row) =>
+              row.usedByDeviceId ? "bg-green-50 dark:bg-green-950/30" : ""
+            }
           />
         </CardContent>
       </Card>

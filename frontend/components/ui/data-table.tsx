@@ -42,6 +42,7 @@ interface DataTableProps<TData, TValue> {
   manualSorting?: boolean;
   externalSorting?: SortingState;
   onExternalSortingChange?: (sorting: SortingState) => void;
+  getRowClassName?: (row: TData) => string;
 }
 
 export function DataTable<TData, TValue>({
@@ -54,6 +55,7 @@ export function DataTable<TData, TValue>({
   manualSorting = false,
   externalSorting,
   onExternalSortingChange,
+  getRowClassName,
 }: DataTableProps<TData, TValue>) {
   const [internalSorting, setInternalSorting] = useState<SortingState>([]);
   const sorting = manualSorting ? (externalSorting ?? []) : internalSorting;
@@ -186,7 +188,7 @@ export function DataTable<TData, TValue>({
               </TableRow>
             ) : (
               table.getRowModel().rows.map((row) => (
-                <TableRow key={row.id} className="hover:bg-muted/40">
+                <TableRow key={row.id} className={["hover:bg-muted/40", getRowClassName?.(row.original)].filter(Boolean).join(" ")}>
                   {row.getVisibleCells().map((cell) => (
                     <TableCell key={cell.id} className="px-3 py-2.5 text-sm">
                       {flexRender(cell.column.columnDef.cell, cell.getContext())}

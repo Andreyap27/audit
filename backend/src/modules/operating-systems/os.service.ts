@@ -11,7 +11,7 @@ export const getAll = async () => {
         take: 1,
       },
     },
-    orderBy: [{ version: "asc" }, { licenseType: "asc" }],
+    orderBy: [{ createdAt: "desc" }],
   });
   return items.map(({ devices, ...item }) => ({
     ...item,

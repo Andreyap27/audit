@@ -6,6 +6,16 @@ import { Card } from "@/components/ui/card";
 import { DataTable } from "@/components/ui/data-table";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import {
   Select,
   SelectContent,
@@ -19,8 +29,10 @@ import {
   X,
   ChevronLeft,
   ChevronRight,
+  RotateCcw,
 } from "lucide-react";
 import { useReturnedToGA, useExportReturnedToGA } from "@/hooks/use-reports";
+import { useReactivateDevice } from "@/hooks/use-devices";
 import { useDepartments } from "@/hooks/use-master";
 import { useGlobalModal } from "@/lib/global-modal";
 import { format } from "date-fns";
@@ -62,9 +74,32 @@ export default function ReturnedToGAPage() {
   const sortBy = sorting[0]?.id;
   const sortOrder = sorting[0]?.desc ? "desc" : "asc";
 
+  const [reactivateTarget, setReactivateTarget] = useState<{ id: string; serialNumber: string } | null>(null);
+  const [reactivateNote, setReactivateNote] = useState("");
+
   const modal = useGlobalModal();
   const exportMutation = useExportReturnedToGA();
+  const reactivateMutation = useReactivateDevice();
   const { data: departments } = useDepartments();
+
+  const handleReactivate = async () => {
+    if (!reactivateTarget) return;
+    if (!reactivateNote.trim()) {
+      modal.error({ title: "Alasan tarik kembali wajib diisi" });
+      return;
+    }
+    reactivateMutation.mutate(
+      { id: reactivateTarget.id, note: reactivateNote.trim() },
+      {
+        onSuccess: () => {
+          modal.success({ title: "Perangkat berhasil diaktifkan kembali" });
+          setReactivateTarget(null);
+          setReactivateNote("");
+        },
+        onError: () => modal.error({ title: "Gagal mengaktifkan kembali perangkat" }),
+      },
+    );
+  };
 
   const resetPage = () => setPage(1);
   const isAnyFilter =
@@ -167,6 +202,24 @@ export default function ReturnedToGAPage() {
         <span className="block max-w-[180px] truncate text-xs text-muted-foreground">
           {row.original.returnToGANote ?? "-"}
         </span>
+      ),
+    },
+    {
+      id: "actions",
+      header: "",
+      cell: ({ row }) => (
+        <Button
+          variant="outline"
+          size="sm"
+          className="h-7 gap-1 text-xs text-green-700 border-green-300 hover:bg-green-50"
+          onClick={() => {
+            setReactivateTarget({ id: row.original.id, serialNumber: row.original.serialNumber });
+            setReactivateNote("");
+          }}
+        >
+          <RotateCcw className="h-3 w-3" />
+          Tarik Kembali
+        </Button>
       ),
     },
   ];
@@ -363,6 +416,43 @@ export default function ReturnedToGAPage() {
           </div>
         )}
       </Card>
+
+      {/* Reactivate dialog */}
+      <Dialog
+        open={!!reactivateTarget}
+        onOpenChange={(open) => { if (!open) { setReactivateTarget(null); setReactivateNote(""); } }}
+      >
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle>Tarik Kembali Perangkat</DialogTitle>
+            <DialogDescription>
+              Perangkat <span className="font-mono font-semibold">{reactivateTarget?.serialNumber}</span> akan diaktifkan kembali.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-2">
+            <Label>Alasan tarik kembali <span className="text-destructive">*</span></Label>
+            <Textarea
+              placeholder="Contoh: Perangkat diperlukan kembali untuk karyawan baru"
+              value={reactivateNote}
+              onChange={(e) => setReactivateNote(e.target.value)}
+              rows={3}
+            />
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => { setReactivateTarget(null); setReactivateNote(""); }}>
+              Batal
+            </Button>
+            <Button
+              onClick={handleReactivate}
+              disabled={reactivateMutation.isPending}
+              className="bg-green-600 hover:bg-green-700 text-white"
+            >
+              <RotateCcw className="mr-2 h-4 w-4" />
+              {reactivateMutation.isPending ? "Memproses..." : "Tarik Kembali"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

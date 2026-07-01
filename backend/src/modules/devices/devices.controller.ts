@@ -156,6 +156,24 @@ export const returnToGA = async (
   }
 };
 
+export const reactivate = async (
+  req: AuthRequest,
+  res: Response,
+  next: NextFunction,
+): Promise<void> => {
+  try {
+    const { note } = req.body as { note?: string };
+    if (!note || !note.trim()) {
+      res.status(400).json({ message: "Alasan tarik kembali wajib diisi" });
+      return;
+    }
+    const device = await service.reactivateDevice(req.params.id as string, note.trim(), req.user!.id);
+    res.json(device);
+  } catch (err) {
+    next(err);
+  }
+};
+
 export const getHistory = async (
   req: AuthRequest,
   res: Response,

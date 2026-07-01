@@ -133,7 +133,7 @@ const buildOrderBy = (sortBy?: string, sortOrder: "asc" | "desc" = "asc") => {
     case "dept":         return [{ department: { code: dir } }];
     case "notes":        return [{ notes: dir }];
     case "assetCode":    return [{ assetCode: dir }];
-    default:             return [{ department: { code: "asc" as const } }, { serialNumber: "asc" as const }];
+    default:             return [{ createdAt: "desc" as const }];
   }
 };
 
@@ -418,7 +418,7 @@ export const returnDeviceToGA = async (
 
   const device = await prisma.device.update({
     where: { id },
-    data: { isActive: false, returnedToGAAt: new Date(), returnedToGANote: note },
+    data: { isActive: false, returnedToGAAt: new Date(), returnedToGANote: note, reactivationNote: null },
   });
 
   await prisma.auditLog.create({
@@ -433,6 +433,30 @@ export const returnDeviceToGA = async (
   });
 
   deleteProofDir(existing.serialNumber);
+  return device;
+};
+
+export const reactivateDevice = async (id: string, note: string, userId: string) => {
+  const existing = await prisma.device.findUnique({ where: { id } });
+  if (!existing) throw new AppError("Device not found", 404);
+  if (existing.isActive) throw new AppError("Perangkat masih aktif", 400);
+
+  const device = await prisma.device.update({
+    where: { id },
+    data: { isActive: true, returnedToGAAt: null, returnedToGANote: null, reactivationNote: note },
+  });
+
+  await prisma.auditLog.create({
+    data: {
+      action: "UPDATE",
+      tableName: "devices",
+      recordId: id,
+      oldData: existing as unknown as object,
+      newData: device as unknown as object,
+      userId,
+    },
+  });
+
   return device;
 };
 

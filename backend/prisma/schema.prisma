@@ -120,6 +120,7 @@ model Device {
   isActive               Boolean  @default(true)
   returnedToGAAt        DateTime?
   returnedToGANote      String?
+  reactivationNote      String?
   createdAt             DateTime  @default(now())
   updatedAt             DateTime  @updatedAt
 

@@ -12,7 +12,7 @@ export const getAll = async (type: MsType) => {
       projectDevices:  { where: activeComputer, select: { id: true }, take: 1 },
       accessDevices:   { where: activeComputer, select: { id: true }, take: 1 },
     },
-    orderBy: [{ version: "desc" }, { licenseType: "asc" }],
+    orderBy: [{ createdAt: "desc" }],
   });
   return items.map(({ officeDevices, visioDevices, projectDevices, accessDevices, ...item }) => {
     const deviceArr =
