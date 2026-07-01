@@ -1,2 +1,8 @@
 -- AlterTable
 ALTER TABLE "Device" ADD COLUMN "reactivationNote" TEXT;
+
+-- AlterTable
+ALTER TABLE "OperatingSystem" ADD COLUMN "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP;
+
+-- AlterTable
+ALTER TABLE "MicrosoftSoftware" ADD COLUMN "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP;

@@ -45,6 +45,7 @@ model OperatingSystem {
   serialNumber String?  @unique
   proofPaths   String[] @default([])
   isActive     Boolean  @default(true)
+  createdAt    DateTime @default(now())
 
   devices Device[]
 }
@@ -57,6 +58,7 @@ model MicrosoftSoftware {
   serialNumber String?  @unique
   proofPaths   String[] @default([])
   isActive     Boolean  @default(true)
+  createdAt    DateTime @default(now())
 
   officeDevices  Device[] @relation("DeviceOffice")
   visioDevices   Device[] @relation("DeviceVisio")
