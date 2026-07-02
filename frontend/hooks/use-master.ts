@@ -94,6 +94,7 @@ export const useCreateOs = () => {
       licenseType: string;
       serialNumber?: string;
       proofPaths?: string[];
+      keterangan?: string;
     }) => api.post("/operating-systems", data).then((r) => r.data),
     onSuccess: () => qc.invalidateQueries({ queryKey: ["operating-systems"] }),
   });
@@ -112,11 +113,19 @@ export const useUpdateOs = () => {
       licenseType?: string;
       serialNumber?: string;
       proofPaths?: string[];
+      keterangan?: string;
       isActive?: boolean;
     }) => api.put(`/operating-systems/${id}`, data).then((r) => r.data),
     onSuccess: () => qc.invalidateQueries({ queryKey: ["operating-systems"] }),
   });
 };
+
+export const useOsHistory = (id: string) =>
+  useQuery({
+    queryKey: ["operating-systems", id, "history"],
+    queryFn: () => api.get(`/operating-systems/${id}/history`).then((r) => r.data),
+    enabled: !!id,
+  });
 
 export const useDeleteOs = () => {
   const qc = useQueryClient();
@@ -187,6 +196,7 @@ export const useCreateMicrosoft = () => {
       licenseType: string;
       serialNumber?: string;
       proofPaths?: string[];
+      keterangan?: string;
     }) => api.post("/microsoft", data).then((r) => r.data),
     onSuccess: (_data, vars) =>
       qc.invalidateQueries({ queryKey: ["microsoft", vars.type] }),
@@ -206,11 +216,19 @@ export const useUpdateMicrosoft = () => {
       licenseType?: string;
       serialNumber?: string;
       proofPaths?: string[];
+      keterangan?: string;
       isActive?: boolean;
     }) => api.put(`/microsoft/${id}`, data).then((r) => r.data),
     onSuccess: () => qc.invalidateQueries({ queryKey: ["microsoft"] }),
   });
 };
+
+export const useMsHistory = (id: string) =>
+  useQuery({
+    queryKey: ["microsoft", id, "history"],
+    queryFn: () => api.get(`/microsoft/${id}/history`).then((r) => r.data),
+    enabled: !!id,
+  });
 
 export const useDeleteMicrosoft = () => {
   const qc = useQueryClient();

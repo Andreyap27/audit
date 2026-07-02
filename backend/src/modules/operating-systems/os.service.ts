@@ -57,6 +57,12 @@ export const update = async (
   return prisma.operatingSystem.update({ where: { id }, data });
 };
 
+export const getHistory = async (id: string) =>
+  prisma.licenseAssignmentHistory.findMany({
+    where: { licenseKind: "OS", licenseId: id },
+    orderBy: { createdAt: "desc" },
+  });
+
 export const remove = async (id: string) => {
   const os = await prisma.operatingSystem.findUnique({
     where: { id },

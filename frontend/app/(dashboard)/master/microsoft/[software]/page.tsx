@@ -24,10 +24,11 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog"
 import { Label } from "@/components/ui/label"
-import { Plus, Pencil, Trash2, Key } from "lucide-react"
-import { useMicrosoftSoftware, useCreateMicrosoft, useUpdateMicrosoft, useDeleteMicrosoft, useVersionMaster } from "@/hooks/use-master"
+import { Plus, Pencil, Trash2, Key, History } from "lucide-react"
+import { useMicrosoftSoftware, useCreateMicrosoft, useUpdateMicrosoft, useDeleteMicrosoft, useVersionMaster, useMsHistory } from "@/hooks/use-master"
 import { useGlobalModal } from "@/lib/global-modal"
 import { MultiEvidenceUploadField } from "@/components/devices/multi-evidence-upload-field"
+import { Textarea } from "@/components/ui/textarea"
 import { format } from "date-fns"
 import { id as idLocale } from "date-fns/locale"
 
@@ -40,13 +41,13 @@ const LABEL_MAP: Record<MsType, string> = {
   ACCESS: "Microsoft Access",
 }
 
-
 type MsRow = {
   id: string
   version: string
   licenseType: string
   serialNumber?: string | null
   proofPaths?: string[]
+  keterangan?: string | null
   createdAt?: string | null
   usedByDeviceId?: string | null
   usedByUserName?: string | null
@@ -58,9 +59,44 @@ type MsForm = {
   licenseType: string
   serialNumber: string
   proofPaths: string[]
+  keterangan: string
 }
 
-const emptyForm: MsForm = { version: "", licenseType: "OEM", serialNumber: "", proofPaths: [] }
+const emptyForm: MsForm = { version: "", licenseType: "OEM", serialNumber: "", proofPaths: [], keterangan: "" }
+
+function MsHistoryDialog({ id, version, shortLabel, onClose }: { id: string; version: string; shortLabel: string; onClose: () => void }) {
+  const { data: history, isLoading } = useMsHistory(id)
+  return (
+    <Dialog open onOpenChange={(o) => { if (!o) onClose() }}>
+      <DialogContent className="max-w-lg">
+        <DialogHeader>
+          <DialogTitle>Riwayat Penggunaan — {shortLabel} {version}</DialogTitle>
+          <DialogDescription>History lisensi ini berpindah antar perangkat</DialogDescription>
+        </DialogHeader>
+        <div className="max-h-96 overflow-y-auto space-y-2">
+          {isLoading && <p className="text-sm text-muted-foreground py-4 text-center">Memuat...</p>}
+          {!isLoading && (!history || history.length === 0) && (
+            <p className="text-sm text-muted-foreground py-4 text-center">Belum ada riwayat</p>
+          )}
+          {(history ?? []).map((h: { id: string; action: string; serialNumber: string | null; userName: string | null; createdAt: string }) => (
+            <div key={h.id} className="flex items-start gap-3 rounded-lg border px-3 py-2 text-sm">
+              <span className={`mt-0.5 shrink-0 rounded-full px-2 py-0.5 text-xs font-semibold ${h.action === "ASSIGNED" ? "bg-green-100 text-green-700" : "bg-red-100 text-red-700"}`}>
+                {h.action === "ASSIGNED" ? "Dipasang" : "Dilepas"}
+              </span>
+              <div className="flex-1 min-w-0">
+                <p className="font-medium truncate">{h.userName ?? "-"}</p>
+                <p className="font-mono text-xs text-muted-foreground">{h.serialNumber ?? "-"}</p>
+              </div>
+              <span className="text-xs text-muted-foreground shrink-0">
+                {format(new Date(h.createdAt), "dd MMM yyyy HH:mm", { locale: idLocale })}
+              </span>
+            </div>
+          ))}
+        </div>
+      </DialogContent>
+    </Dialog>
+  )
+}
 
 export default function MicrosoftPage() {
   const params = useParams()
@@ -68,7 +104,7 @@ export default function MicrosoftPage() {
   const msType = TYPE_MAP[software] ?? "OFFICE"
   const label = LABEL_MAP[msType]
   const shortLabel = label.split(" ")[1]
-const { data: items, isLoading } = useMicrosoftSoftware(msType)
+  const { data: items, isLoading } = useMicrosoftSoftware(msType)
   const createMut = useCreateMicrosoft()
   const updateMut = useUpdateMicrosoft()
   const deleteMut = useDeleteMicrosoft()
@@ -78,6 +114,7 @@ const { data: items, isLoading } = useMicrosoftSoftware(msType)
   const [open, setOpen] = useState(false)
   const [editId, setEditId] = useState<string | null>(null)
   const [form, setForm] = useState<MsForm>(emptyForm)
+  const [historyTarget, setHistoryTarget] = useState<{ id: string; version: string } | null>(null)
 
   const openAdd = () => { setEditId(null); setForm(emptyForm); setOpen(true) }
   const openEdit = (o: MsRow) => {
@@ -87,6 +124,7 @@ const { data: items, isLoading } = useMicrosoftSoftware(msType)
       licenseType: o.licenseType,
       serialNumber: o.serialNumber ?? "",
       proofPaths: o.proofPaths ?? [],
+      keterangan: o.keterangan ?? "",
     })
     setOpen(true)
   }
@@ -101,6 +139,7 @@ const { data: items, isLoading } = useMicrosoftSoftware(msType)
       version: form.version,
       licenseType: form.licenseType,
       serialNumber: form.serialNumber || undefined,
+      keterangan: form.keterangan || undefined,
       proofPaths: form.proofPaths,
     }
     try {
@@ -187,10 +226,22 @@ const { data: items, isLoading } = useMicrosoftSoftware(msType)
         ),
     },
     {
+      accessorKey: "keterangan",
+      header: "Keterangan",
+      cell: ({ row }) => (
+        <span className="block max-w-[160px] truncate text-xs text-muted-foreground">
+          {row.original.keterangan ?? "-"}
+        </span>
+      ),
+    },
+    {
       id: "actions",
       header: "Aksi",
       cell: ({ row }) => (
         <div className="flex justify-end gap-2">
+          <Button variant="ghost" size="icon" title="Riwayat" onClick={() => setHistoryTarget({ id: row.original.id, version: row.original.version })}>
+            <History className="h-4 w-4 text-muted-foreground" />
+          </Button>
           <Button variant="ghost" size="icon" onClick={() => openEdit(row.original)}>
             <Pencil className="h-4 w-4" />
           </Button>
@@ -283,6 +334,15 @@ const { data: items, isLoading } = useMicrosoftSoftware(msType)
                 onError={msg => modal.error({ title: msg })}
               />
             </div>
+            <div>
+              <Label>Keterangan</Label>
+              <Textarea
+                value={form.keterangan}
+                onChange={e => setField("keterangan", e.target.value)}
+                placeholder="Catatan tambahan (opsional)"
+                rows={2}
+              />
+            </div>
           </div>
           <DialogFooter>
             <Button variant="outline" onClick={() => setOpen(false)}>Batal</Button>
@@ -292,6 +352,14 @@ const { data: items, isLoading } = useMicrosoftSoftware(msType)
           </DialogFooter>
         </DialogContent>
       </Dialog>
+      {historyTarget && (
+        <MsHistoryDialog
+          id={historyTarget.id}
+          version={historyTarget.version}
+          shortLabel={shortLabel}
+          onClose={() => setHistoryTarget(null)}
+        />
+      )}
     </div>
   )
 }

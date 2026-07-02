@@ -6,6 +6,7 @@ export const createOsSchema = z.object({
   licenseType: z.string().min(1),
   serialNumber: z.string().optional(),
   proofPaths: z.array(z.string()).optional().default([]),
+  keterangan: z.string().optional(),
 });
 
 export const updateOsSchema = createOsSchema.partial().extend({

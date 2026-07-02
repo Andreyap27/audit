@@ -65,6 +65,18 @@ export const update = async (
   }
 };
 
+export const getHistory = async (
+  req: AuthRequest,
+  res: Response,
+  next: NextFunction,
+): Promise<void> => {
+  try {
+    res.json(await service.getHistory(req.params.id as string));
+  } catch (err) {
+    next(err);
+  }
+};
+
 export const remove = async (
   req: AuthRequest,
   res: Response,

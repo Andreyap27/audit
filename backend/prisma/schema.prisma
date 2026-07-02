@@ -44,6 +44,7 @@ model OperatingSystem {
   licenseType  String
   serialNumber String?  @unique
   proofPaths   String[] @default([])
+  keterangan   String?
   isActive     Boolean  @default(true)
   createdAt    DateTime @default(now())
 
@@ -57,6 +58,7 @@ model MicrosoftSoftware {
   licenseType  String
   serialNumber String?  @unique
   proofPaths   String[] @default([])
+  keterangan   String?
   isActive     Boolean  @default(true)
   createdAt    DateTime @default(now())
 
@@ -186,6 +188,17 @@ model VersionMaster {
   isActive Boolean @default(true)
 
   @@unique([category, name])
+}
+
+model LicenseAssignmentHistory {
+  id           String   @id @default(uuid())
+  licenseKind  String
+  licenseId    String
+  deviceId     String?
+  serialNumber String?
+  userName     String?
+  action       String
+  createdAt    DateTime @default(now())
 }
 
 model AuditLog {

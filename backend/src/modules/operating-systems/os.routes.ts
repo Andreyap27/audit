@@ -6,6 +6,7 @@ const router = Router();
 router.use(authenticate);
 
 router.get("/", ctrl.getAll);
+router.get("/:id/history", ctrl.getHistory);
 router.get("/:id", ctrl.getById);
 router.post("/", authorize("ADMIN", "EDITOR"), ctrl.create);
 router.put("/:id", authorize("ADMIN", "EDITOR"), ctrl.update);

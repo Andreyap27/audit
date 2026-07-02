@@ -73,6 +73,45 @@ const deleteProofDir = (serialNumber: string | null) => {
   }
 };
 
+const LICENSE_KINDS = [
+  { field: "operatingSystemId" as const, kind: "OS" },
+  { field: "officeId" as const,          kind: "OFFICE" },
+  { field: "visioId" as const,           kind: "VISIO" },
+  { field: "projectId" as const,         kind: "PROJECT" },
+  { field: "accessId" as const,          kind: "ACCESS" },
+] as const;
+
+type LicensableDevice = { operatingSystemId?: string | null; officeId?: string | null; visioId?: string | null; projectId?: string | null; accessId?: string | null };
+
+const saveLicenseHistory = async (
+  action: "ASSIGNED" | "UNASSIGNED",
+  kind: string,
+  licenseId: string,
+  deviceId: string,
+  serialNumber: string,
+  userName: string | null,
+) =>
+  prisma.licenseAssignmentHistory.create({
+    data: { licenseKind: kind, licenseId, deviceId, serialNumber, userName, action },
+  });
+
+const trackLicenseChanges = async (
+  deviceId: string,
+  serialNumber: string,
+  userName: string | null,
+  oldDevice: LicensableDevice,
+  newDevice: LicensableDevice,
+) => {
+  for (const { field, kind } of LICENSE_KINDS) {
+    const oldId = oldDevice[field] ?? null;
+    const newId = newDevice[field] ?? null;
+    if (oldId !== newId) {
+      if (oldId) await saveLicenseHistory("UNASSIGNED", kind, oldId, deviceId, serialNumber, userName);
+      if (newId) await saveLicenseHistory("ASSIGNED", kind, newId, deviceId, serialNumber, userName);
+    }
+  }
+};
+
 const deviceInclude = {
   department: true,
   unitType: true,
@@ -271,6 +310,11 @@ export const createDevice = async (
       },
     });
 
+    for (const { field, kind } of LICENSE_KINDS) {
+      const lid = created[field];
+      if (lid) await saveLicenseHistory("ASSIGNED", kind, lid, created.id, created.serialNumber, created.userName);
+    }
+
     await tx.auditLog.create({
       data: {
         action: "CREATE",
@@ -303,6 +347,8 @@ export const updateDevice = async (
     data,
     include: deviceInclude,
   });
+
+  await trackLicenseChanges(id, existing.serialNumber, existing.userName, existing, device);
 
   await prisma.auditLog.create({
     data: {
@@ -390,6 +436,8 @@ export const reassignDevice = async (
       },
     });
 
+    await trackLicenseChanges(id, existing.serialNumber, existing.userName, existing, reassigned);
+
     await tx.auditLog.create({
       data: {
         action: "REASSIGN",
@@ -432,6 +480,11 @@ export const returnDeviceToGA = async (
     },
   });
 
+  for (const { field, kind } of LICENSE_KINDS) {
+    const lid = existing[field];
+    if (lid) await saveLicenseHistory("UNASSIGNED", kind, lid, id, existing.serialNumber, existing.userName);
+  }
+
   deleteProofDir(existing.serialNumber);
   return device;
 };
@@ -445,6 +498,11 @@ export const reactivateDevice = async (id: string, note: string, userId: string)
     where: { id },
     data: { isActive: true, returnedToGAAt: null, returnedToGANote: null, reactivationNote: note },
   });
+
+  for (const { field, kind } of LICENSE_KINDS) {
+    const lid = existing[field];
+    if (lid) await saveLicenseHistory("ASSIGNED", kind, lid, id, existing.serialNumber, existing.userName);
+  }
 
   await prisma.auditLog.create({
     data: {

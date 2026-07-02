@@ -65,6 +65,12 @@ export const update = async (
   return prisma.microsoftSoftware.update({ where: { id }, data });
 };
 
+export const getHistory = async (id: string) =>
+  prisma.licenseAssignmentHistory.findMany({
+    where: { licenseId: id },
+    orderBy: { createdAt: "desc" },
+  });
+
 export const remove = async (id: string) => {
   const ms = await prisma.microsoftSoftware.findUnique({
     where: { id },

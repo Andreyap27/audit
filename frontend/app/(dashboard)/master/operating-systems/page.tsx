@@ -23,10 +23,11 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog"
 import { Label } from "@/components/ui/label"
-import { Plus, Pencil, Trash2, Key } from "lucide-react"
-import { useOperatingSystems, useCreateOs, useUpdateOs, useDeleteOs, useVersionMaster } from "@/hooks/use-master"
+import { Plus, Pencil, Trash2, Key, History } from "lucide-react"
+import { useOperatingSystems, useCreateOs, useUpdateOs, useDeleteOs, useVersionMaster, useOsHistory } from "@/hooks/use-master"
 import { useGlobalModal } from "@/lib/global-modal"
 import { MultiEvidenceUploadField } from "@/components/devices/multi-evidence-upload-field"
+import { Textarea } from "@/components/ui/textarea"
 import { format } from "date-fns"
 import { id as idLocale } from "date-fns/locale"
 
@@ -36,6 +37,7 @@ type OsRow = {
   licenseType: string
   serialNumber?: string | null
   proofPaths?: string[]
+  keterangan?: string | null
   createdAt?: string | null
   usedByDeviceId?: string | null
   usedByUserName?: string | null
@@ -47,9 +49,44 @@ type OsForm = {
   licenseType: string
   serialNumber: string
   proofPaths: string[]
+  keterangan: string
 }
 
-const emptyForm: OsForm = { version: "", licenseType: "OEM", serialNumber: "", proofPaths: [] }
+const emptyForm: OsForm = { version: "", licenseType: "OEM", serialNumber: "", proofPaths: [], keterangan: "" }
+
+function OsHistoryDialog({ id, version, onClose }: { id: string; version: string; onClose: () => void }) {
+  const { data: history, isLoading } = useOsHistory(id)
+  return (
+    <Dialog open onOpenChange={(o) => { if (!o) onClose() }}>
+      <DialogContent className="max-w-lg">
+        <DialogHeader>
+          <DialogTitle>Riwayat Penggunaan — {version}</DialogTitle>
+          <DialogDescription>History lisensi ini berpindah antar perangkat</DialogDescription>
+        </DialogHeader>
+        <div className="max-h-96 overflow-y-auto space-y-2">
+          {isLoading && <p className="text-sm text-muted-foreground py-4 text-center">Memuat...</p>}
+          {!isLoading && (!history || history.length === 0) && (
+            <p className="text-sm text-muted-foreground py-4 text-center">Belum ada riwayat</p>
+          )}
+          {(history ?? []).map((h: { id: string; action: string; serialNumber: string | null; userName: string | null; createdAt: string }) => (
+            <div key={h.id} className="flex items-start gap-3 rounded-lg border px-3 py-2 text-sm">
+              <span className={`mt-0.5 shrink-0 rounded-full px-2 py-0.5 text-xs font-semibold ${h.action === "ASSIGNED" ? "bg-green-100 text-green-700" : "bg-red-100 text-red-700"}`}>
+                {h.action === "ASSIGNED" ? "Dipasang" : "Dilepas"}
+              </span>
+              <div className="flex-1 min-w-0">
+                <p className="font-medium truncate">{h.userName ?? "-"}</p>
+                <p className="font-mono text-xs text-muted-foreground">{h.serialNumber ?? "-"}</p>
+              </div>
+              <span className="text-xs text-muted-foreground shrink-0">
+                {format(new Date(h.createdAt), "dd MMM yyyy HH:mm", { locale: idLocale })}
+              </span>
+            </div>
+          ))}
+        </div>
+      </DialogContent>
+    </Dialog>
+  )
+}
 
 export default function OperatingSystemsPage() {
   const { data: osList, isLoading } = useOperatingSystems()
@@ -62,6 +99,7 @@ export default function OperatingSystemsPage() {
   const [open, setOpen] = useState(false)
   const [editId, setEditId] = useState<string | null>(null)
   const [form, setForm] = useState<OsForm>(emptyForm)
+  const [historyTarget, setHistoryTarget] = useState<{ id: string; version: string } | null>(null)
 
   const openAdd = () => { setEditId(null); setForm(emptyForm); setOpen(true) }
   const openEdit = (o: OsRow) => {
@@ -71,6 +109,7 @@ export default function OperatingSystemsPage() {
       licenseType: o.licenseType,
       serialNumber: o.serialNumber ?? "",
       proofPaths: o.proofPaths ?? [],
+      keterangan: o.keterangan ?? "",
     })
     setOpen(true)
   }
@@ -87,6 +126,7 @@ export default function OperatingSystemsPage() {
       licenseType: form.licenseType,
       serialNumber: form.serialNumber || undefined,
       proofPaths: form.proofPaths,
+      keterangan: form.keterangan || undefined,
     }
     try {
       if (editId) {
@@ -170,10 +210,22 @@ export default function OperatingSystemsPage() {
         ),
     },
     {
+      accessorKey: "keterangan",
+      header: "Keterangan",
+      cell: ({ row }) => (
+        <span className="block max-w-[160px] truncate text-xs text-muted-foreground">
+          {row.original.keterangan ?? "-"}
+        </span>
+      ),
+    },
+    {
       id: "actions",
       header: "Aksi",
       cell: ({ row }) => (
         <div className="flex justify-end gap-2">
+          <Button variant="ghost" size="icon" title="Riwayat" onClick={() => setHistoryTarget({ id: row.original.id, version: row.original.version })}>
+            <History className="h-4 w-4 text-muted-foreground" />
+          </Button>
           <Button variant="ghost" size="icon" onClick={() => openEdit(row.original)}>
             <Pencil className="h-4 w-4" />
           </Button>
@@ -265,6 +317,15 @@ export default function OperatingSystemsPage() {
                 onError={msg => modal.error({ title: msg })}
               />
             </div>
+            <div>
+              <Label>Keterangan</Label>
+              <Textarea
+                value={form.keterangan}
+                onChange={e => setField("keterangan", e.target.value)}
+                placeholder="Catatan tambahan (opsional)"
+                rows={2}
+              />
+            </div>
           </div>
           <DialogFooter>
             <Button variant="outline" onClick={() => setOpen(false)}>Batal</Button>
@@ -274,6 +335,13 @@ export default function OperatingSystemsPage() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+      {historyTarget && (
+        <OsHistoryDialog
+          id={historyTarget.id}
+          version={historyTarget.version}
+          onClose={() => setHistoryTarget(null)}
+        />
+      )}
     </div>
   )
 }
