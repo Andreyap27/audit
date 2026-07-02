@@ -7,7 +7,7 @@ export const getAll = async () => {
     include: {
       devices: {
         where: { isActive: true, category: "COMPUTER" },
-        select: { id: true },
+        select: { id: true, userName: true, serialNumber: true },
         take: 1,
       },
     },
@@ -16,6 +16,8 @@ export const getAll = async () => {
   return items.map(({ devices, ...item }) => ({
     ...item,
     usedByDeviceId: devices[0]?.id ?? null,
+    usedByUserName: devices[0]?.userName ?? null,
+    usedBySerialNumber: devices[0]?.serialNumber ?? null,
   }));
 };
 

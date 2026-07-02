@@ -38,6 +38,8 @@ type OsRow = {
   proofPaths?: string[]
   createdAt?: string | null
   usedByDeviceId?: string | null
+  usedByUserName?: string | null
+  usedBySerialNumber?: string | null
 }
 
 type OsForm = {
@@ -112,6 +114,14 @@ export default function OperatingSystemsPage() {
 
   const columns: ColumnDef<OsRow>[] = [
     {
+      accessorKey: "createdAt",
+      header: "Tgl Dibuat",
+      cell: ({ row }) =>
+        row.original.createdAt
+          ? format(new Date(row.original.createdAt), "dd MMM yyyy", { locale: idLocale })
+          : "-",
+    },
+    {
       accessorKey: "version",
       header: "Versi OS",
       cell: ({ row }) => <span className="font-medium">{row.original.version}</span>,
@@ -147,12 +157,17 @@ export default function OperatingSystemsPage() {
       },
     },
     {
-      accessorKey: "createdAt",
-      header: "Tgl Dibuat",
+      id: "usedBy",
+      header: "Digunakan Oleh",
       cell: ({ row }) =>
-        row.original.createdAt
-          ? format(new Date(row.original.createdAt), "dd MMM yyyy", { locale: idLocale })
-          : "-",
+        row.original.usedByDeviceId ? (
+          <div className="text-xs">
+            <p className="font-medium text-green-700">{row.original.usedByUserName ?? "-"}</p>
+            <p className="font-mono text-muted-foreground">{row.original.usedBySerialNumber}</p>
+          </div>
+        ) : (
+          <span className="text-muted-foreground text-xs">Belum digunakan</span>
+        ),
     },
     {
       id: "actions",
@@ -187,7 +202,7 @@ export default function OperatingSystemsPage() {
             data={(osList ?? []) as OsRow[]}
             isLoading={isLoading}
             getRowClassName={(row) =>
-              row.usedByDeviceId ? "bg-green-50 dark:bg-green-950/30" : ""
+              row.usedByDeviceId ? "text-green-700 dark:text-green-400" : ""
             }
           />
         </CardContent>

@@ -7,10 +7,10 @@ export const getAll = async (type: MsType) => {
   const items = await prisma.microsoftSoftware.findMany({
     where: { type, isActive: true },
     include: {
-      officeDevices:   { where: activeComputer, select: { id: true }, take: 1 },
-      visioDevices:    { where: activeComputer, select: { id: true }, take: 1 },
-      projectDevices:  { where: activeComputer, select: { id: true }, take: 1 },
-      accessDevices:   { where: activeComputer, select: { id: true }, take: 1 },
+      officeDevices:   { where: activeComputer, select: { id: true, userName: true, serialNumber: true }, take: 1 },
+      visioDevices:    { where: activeComputer, select: { id: true, userName: true, serialNumber: true }, take: 1 },
+      projectDevices:  { where: activeComputer, select: { id: true, userName: true, serialNumber: true }, take: 1 },
+      accessDevices:   { where: activeComputer, select: { id: true, userName: true, serialNumber: true }, take: 1 },
     },
     orderBy: [{ createdAt: "desc" }],
   });
@@ -20,7 +20,12 @@ export const getAll = async (type: MsType) => {
       type === "VISIO"   ? visioDevices   :
       type === "PROJECT" ? projectDevices :
                            accessDevices;
-    return { ...item, usedByDeviceId: deviceArr[0]?.id ?? null };
+    return {
+      ...item,
+      usedByDeviceId: deviceArr[0]?.id ?? null,
+      usedByUserName: deviceArr[0]?.userName ?? null,
+      usedBySerialNumber: deviceArr[0]?.serialNumber ?? null,
+    };
   });
 };
 
