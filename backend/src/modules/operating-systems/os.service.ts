@@ -33,6 +33,7 @@ export const create = async (data: {
   licenseType: string;
   serialNumber?: string;
   proofPaths?: string[];
+  keterangan?: string;
 }) =>
   prisma.operatingSystem.create({
     data: {
@@ -49,6 +50,7 @@ export const update = async (
     licenseType?: string;
     serialNumber?: string;
     proofPaths?: string[];
+    keterangan?: string;
     isActive?: boolean;
   },
 ) => {
