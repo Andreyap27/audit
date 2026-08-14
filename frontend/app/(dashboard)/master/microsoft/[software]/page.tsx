@@ -215,6 +215,7 @@ export default function MicrosoftPage() {
     {
       id: "usedBy",
       header: "Digunakan Oleh",
+      accessorFn: (row) => row.usedByUserName ?? "",
       cell: ({ row }) =>
         row.original.usedByDeviceId ? (
           <div className="text-xs">

@@ -139,6 +139,7 @@ export default function LoanReportPage() {
     {
       id: "unitType",
       header: "Jenis",
+      accessorFn: (row) => row.device?.unitType?.code ?? "",
       cell: ({ row }) => (
         <Badge variant="outline">
           {row.original.device?.unitType?.code ?? "-"}
@@ -148,6 +149,7 @@ export default function LoanReportPage() {
     {
       id: "department",
       header: "Departemen",
+      accessorFn: (row) => row.device?.department?.name ?? "",
       cell: ({ row }) =>
         row.original.device?.department?.name ?? "-",
     },
@@ -179,6 +181,9 @@ export default function LoanReportPage() {
     {
       id: "duration",
       header: "Durasi",
+      accessorFn: (row) => row.returnedAt
+        ? differenceInDays(new Date(row.returnedAt), new Date(row.borrowedAt))
+        : differenceInDays(new Date(), new Date(row.borrowedAt)),
       cell: ({ row }) => {
         if (!row.original.returnedAt) {
           const days = differenceInDays(

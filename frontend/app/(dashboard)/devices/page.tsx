@@ -348,6 +348,7 @@ export default function DevicesPage() {
       id: "sn-files",
       header: "File",
       size: 60,
+      accessorFn: (row) => (row.serialNumberProofPaths ?? []).length,
       cell: ({ row }) => renderSnFileIcons(row.original.serialNumberProofPaths ?? []),
     },
     {
@@ -366,6 +367,7 @@ export default function DevicesPage() {
     {
       id: "type",
       header: "Type",
+      accessorFn: (row) => row.unitType?.name ?? "",
       cell: ({ row }) => (
         <Badge variant={row.original.unitType?.name === "NB" ? "default" : "secondary"}>
           {row.original.unitType?.name ?? "-"}
@@ -375,6 +377,7 @@ export default function DevicesPage() {
     {
       id: "canBeLent",
       header: "Dipinjam",
+      accessorFn: (row) => (row.canBeLent ? 1 : 0),
       cell: ({ row }) =>
         row.original.canBeLent ? (
           <CheckCircle2 className="h-4 w-4 text-green-500" />
@@ -385,6 +388,7 @@ export default function DevicesPage() {
     {
       id: "os",
       header: "OS",
+      accessorFn: (row) => row.operatingSystem?.version ?? "",
       cell: ({ row }) => {
         const os = row.original.operatingSystem;
         if (!os) return <span>-</span>;
@@ -394,6 +398,7 @@ export default function DevicesPage() {
     {
       id: "office",
       header: "Office",
+      accessorFn: (row) => row.office?.version ?? "",
       cell: ({ row }) => {
         const office = row.original.office;
         if (!office) return <span>-</span>;
@@ -403,6 +408,7 @@ export default function DevicesPage() {
     {
       id: "visio",
       header: "Visio",
+      accessorFn: (row) => row.visio?.version ?? "",
       cell: ({ row }) => {
         const visio = row.original.visio;
         if (!visio) return <span>-</span>;
@@ -412,6 +418,7 @@ export default function DevicesPage() {
     {
       id: "project",
       header: "Project",
+      accessorFn: (row) => row.project?.version ?? "",
       cell: ({ row }) => {
         const project = row.original.project;
         if (!project) return <span>-</span>;
@@ -421,6 +428,7 @@ export default function DevicesPage() {
     {
       id: "access",
       header: "Access",
+      accessorFn: (row) => row.access?.version ?? "",
       cell: ({ row }) => {
         const access = row.original.access;
         if (!access) return <span>-</span>;
@@ -489,6 +497,7 @@ export default function DevicesPage() {
       id: "sn-files",
       header: "File",
       size: 60,
+      accessorFn: (row) => (row.serialNumberProofPaths ?? []).length,
       cell: ({ row }) => renderSnFileIcons(row.original.serialNumberProofPaths ?? []),
     },
     {
@@ -514,6 +523,7 @@ export default function DevicesPage() {
     {
       id: "canBeLent",
       header: "Dipinjam",
+      accessorFn: (row) => (row.canBeLent ? 1 : 0),
       cell: ({ row }) =>
         row.original.canBeLent ? (
           <CheckCircle2 className="h-4 w-4 text-green-500" />
