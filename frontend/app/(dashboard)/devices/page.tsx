@@ -99,8 +99,17 @@ export default function DevicesPage() {
   const [sorting, setSorting] = useState<SortingState>([]);
   const [preview, setPreview] = useState<{ title: string; paths: string[]; idx: number } | null>(null);
   const [previewText, setPreviewText] = useState<string | null>(null);
-  const [returnToGATarget, setReturnToGATarget] = useState<{ id: string; serialNumber: string } | null>(null);
+  const [returnToGATarget, setReturnToGATarget] = useState<{
+    id: string;
+    serialNumber: string;
+    hasOs: boolean;
+    hasOffice: boolean;
+    hasVisio: boolean;
+    hasProject: boolean;
+    hasAccess: boolean;
+  } | null>(null);
   const [returnToGANote, setReturnToGANote] = useState("");
+  const [licenseFieldsToRelease, setLicenseFieldsToRelease] = useState<string[]>([]);
   const [exportDialogOpen, setExportDialogOpen] = useState(false);
   const [exportAll, setExportAll] = useState(true);
   const [exportDeptIds, setExportDeptIds] = useState<string[]>([]);
@@ -249,13 +258,40 @@ export default function DevicesPage() {
       return;
     }
     try {
-      await returnToGAMutation.mutateAsync({ id: returnToGATarget.id, note: returnToGANote.trim() });
+      await returnToGAMutation.mutateAsync({ id: returnToGATarget.id, note: returnToGANote.trim(), licenseFieldsToRelease });
       modal.success({ title: "Perangkat berhasil dikembalikan ke GA" });
       setReturnToGATarget(null);
       setReturnToGANote("");
+      setLicenseFieldsToRelease([]);
     } catch {
       modal.error({ title: "Gagal mengembalikan perangkat ke GA" });
     }
+  };
+
+  const openReturnToGA = (row: DeviceRow) => {
+    const initial: string[] = [];
+    if (row.operatingSystem) initial.push("operatingSystemId");
+    if (row.office) initial.push("officeId");
+    if (row.visio) initial.push("visioId");
+    if (row.project) initial.push("projectId");
+    if (row.access) initial.push("accessId");
+    setLicenseFieldsToRelease(initial);
+    setReturnToGANote("");
+    setReturnToGATarget({
+      id: row.id,
+      serialNumber: row.serialNumber,
+      hasOs: !!row.operatingSystem,
+      hasOffice: !!row.office,
+      hasVisio: !!row.visio,
+      hasProject: !!row.project,
+      hasAccess: !!row.access,
+    });
+  };
+
+  const toggleLicense = (field: string, checked: boolean) => {
+    setLicenseFieldsToRelease(prev =>
+      checked ? [...prev, field] : prev.filter(f => f !== field)
+    );
   };
 
   const openExportDialog = () => {
@@ -348,6 +384,7 @@ export default function DevicesPage() {
       id: "sn-files",
       header: "File",
       size: 60,
+      enableSorting: false,
       accessorFn: (row) => (row.serialNumberProofPaths ?? []).length,
       cell: ({ row }) => renderSnFileIcons(row.original.serialNumberProofPaths ?? []),
     },
@@ -367,6 +404,7 @@ export default function DevicesPage() {
     {
       id: "type",
       header: "Type",
+      enableSorting: false,
       accessorFn: (row) => row.unitType?.name ?? "",
       cell: ({ row }) => (
         <Badge variant={row.original.unitType?.name === "NB" ? "default" : "secondary"}>
@@ -377,6 +415,7 @@ export default function DevicesPage() {
     {
       id: "canBeLent",
       header: "Dipinjam",
+      enableSorting: false,
       accessorFn: (row) => (row.canBeLent ? 1 : 0),
       cell: ({ row }) =>
         row.original.canBeLent ? (
@@ -388,6 +427,7 @@ export default function DevicesPage() {
     {
       id: "os",
       header: "OS",
+      enableSorting: false,
       accessorFn: (row) => row.operatingSystem?.version ?? "",
       cell: ({ row }) => {
         const os = row.original.operatingSystem;
@@ -398,6 +438,7 @@ export default function DevicesPage() {
     {
       id: "office",
       header: "Office",
+      enableSorting: false,
       accessorFn: (row) => row.office?.version ?? "",
       cell: ({ row }) => {
         const office = row.original.office;
@@ -408,6 +449,7 @@ export default function DevicesPage() {
     {
       id: "visio",
       header: "Visio",
+      enableSorting: false,
       accessorFn: (row) => row.visio?.version ?? "",
       cell: ({ row }) => {
         const visio = row.original.visio;
@@ -418,6 +460,7 @@ export default function DevicesPage() {
     {
       id: "project",
       header: "Project",
+      enableSorting: false,
       accessorFn: (row) => row.project?.version ?? "",
       cell: ({ row }) => {
         const project = row.original.project;
@@ -428,12 +471,20 @@ export default function DevicesPage() {
     {
       id: "access",
       header: "Access",
+      enableSorting: false,
       accessorFn: (row) => row.access?.version ?? "",
       cell: ({ row }) => {
         const access = row.original.access;
         if (!access) return <span>-</span>;
         return renderProofText("Bukti Microsoft Access", `Access ${access.version}`, access.proofPaths ?? []);
       },
+    },
+    {
+      accessorKey: "notes",
+      header: "Keterangan",
+      cell: ({ row }) => (
+        <span className="text-sm text-muted-foreground">{row.original.notes ?? "-"}</span>
+      ),
     },
     {
       id: "actions",
@@ -449,7 +500,7 @@ export default function DevicesPage() {
             variant="ghost"
             size="icon"
             title="Kembalikan ke GA"
-            onClick={() => { setReturnToGANote(""); setReturnToGATarget({ id: row.original.id, serialNumber: row.original.serialNumber }); }}
+            onClick={() => openReturnToGA(row.original)}
           >
             <PackageX className="h-4 w-4 text-amber-500" />
           </Button>
@@ -497,6 +548,7 @@ export default function DevicesPage() {
       id: "sn-files",
       header: "File",
       size: 60,
+      enableSorting: false,
       accessorFn: (row) => (row.serialNumberProofPaths ?? []).length,
       cell: ({ row }) => renderSnFileIcons(row.original.serialNumberProofPaths ?? []),
     },
@@ -523,6 +575,7 @@ export default function DevicesPage() {
     {
       id: "canBeLent",
       header: "Dipinjam",
+      enableSorting: false,
       accessorFn: (row) => (row.canBeLent ? 1 : 0),
       cell: ({ row }) =>
         row.original.canBeLent ? (
@@ -571,7 +624,7 @@ export default function DevicesPage() {
             variant="ghost"
             size="icon"
             title="Kembalikan ke GA"
-            onClick={() => { setReturnToGANote(""); setReturnToGATarget({ id: row.original.id, serialNumber: row.original.serialNumber }); }}
+            onClick={() => openReturnToGA(row.original)}
           >
             <PackageX className="h-4 w-4 text-amber-500" />
           </Button>
@@ -775,17 +828,57 @@ export default function DevicesPage() {
           <DialogHeader>
             <DialogTitle>Kembalikan Perangkat ke GA</DialogTitle>
             <DialogDescription>
-              {returnToGATarget?.serialNumber} — perangkat akan ditandai tidak aktif. Tindakan ini tidak bisa dibatalkan.
+              {returnToGATarget?.serialNumber} — perangkat akan ditandai tidak aktif.
             </DialogDescription>
           </DialogHeader>
-          <div className="space-y-2">
-            <label className="text-sm font-medium">Catatan *</label>
-            <Textarea
-              placeholder="Contoh: Rusak, layar pecah, tidak bisa menyala..."
-              value={returnToGANote}
-              onChange={(e) => setReturnToGANote(e.target.value)}
-              rows={4}
-            />
+          <div className="space-y-4">
+            {(returnToGATarget?.hasOs || returnToGATarget?.hasOffice || returnToGATarget?.hasVisio || returnToGATarget?.hasProject || returnToGATarget?.hasAccess) && (
+              <div className="space-y-2">
+                <label className="text-sm font-medium">Lisensi yang dilepas (bisa digunakan ulang)</label>
+                <p className="text-xs text-muted-foreground">Centang lisensi yang ingin dilepas dari perangkat ini. Lisensi yang tidak dicentang tetap melekat pada unit hardware.</p>
+                <div className="rounded-md border p-3 space-y-2">
+                  {returnToGATarget?.hasOs && (
+                    <div className="flex items-center gap-2">
+                      <Checkbox id="rel-os" checked={licenseFieldsToRelease.includes("operatingSystemId")} onCheckedChange={(c) => toggleLicense("operatingSystemId", !!c)} />
+                      <label htmlFor="rel-os" className="text-sm cursor-pointer">Operating System</label>
+                    </div>
+                  )}
+                  {returnToGATarget?.hasOffice && (
+                    <div className="flex items-center gap-2">
+                      <Checkbox id="rel-office" checked={licenseFieldsToRelease.includes("officeId")} onCheckedChange={(c) => toggleLicense("officeId", !!c)} />
+                      <label htmlFor="rel-office" className="text-sm cursor-pointer">Microsoft Office</label>
+                    </div>
+                  )}
+                  {returnToGATarget?.hasVisio && (
+                    <div className="flex items-center gap-2">
+                      <Checkbox id="rel-visio" checked={licenseFieldsToRelease.includes("visioId")} onCheckedChange={(c) => toggleLicense("visioId", !!c)} />
+                      <label htmlFor="rel-visio" className="text-sm cursor-pointer">Microsoft Visio</label>
+                    </div>
+                  )}
+                  {returnToGATarget?.hasProject && (
+                    <div className="flex items-center gap-2">
+                      <Checkbox id="rel-project" checked={licenseFieldsToRelease.includes("projectId")} onCheckedChange={(c) => toggleLicense("projectId", !!c)} />
+                      <label htmlFor="rel-project" className="text-sm cursor-pointer">Microsoft Project</label>
+                    </div>
+                  )}
+                  {returnToGATarget?.hasAccess && (
+                    <div className="flex items-center gap-2">
+                      <Checkbox id="rel-access" checked={licenseFieldsToRelease.includes("accessId")} onCheckedChange={(c) => toggleLicense("accessId", !!c)} />
+                      <label htmlFor="rel-access" className="text-sm cursor-pointer">Microsoft Access</label>
+                    </div>
+                  )}
+                </div>
+              </div>
+            )}
+            <div className="space-y-2">
+              <label className="text-sm font-medium">Catatan *</label>
+              <Textarea
+                placeholder="Contoh: Rusak, layar pecah, tidak bisa menyala..."
+                value={returnToGANote}
+                onChange={(e) => setReturnToGANote(e.target.value)}
+                rows={3}
+              />
+            </div>
           </div>
           <DialogFooter>
             <Button variant="outline" onClick={() => setReturnToGATarget(null)}>

@@ -178,6 +178,7 @@ export default function ReturnedToGAPage() {
     {
       id: "department",
       header: "Departemen",
+      enableSorting: false,
       accessorFn: (row) => row.department?.name ?? "",
       cell: ({ row }) => row.original.department?.name ?? "-",
     },

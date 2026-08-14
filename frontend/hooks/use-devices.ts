@@ -69,8 +69,8 @@ export const useDeleteDevice = () => {
 export const useReturnDeviceToGA = () => {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: ({ id, note }: { id: string; note: string }) =>
-      api.post(`/devices/${id}/return-to-ga`, { note }).then((r) => r.data),
+    mutationFn: ({ id, note, licenseFieldsToRelease }: { id: string; note: string; licenseFieldsToRelease: string[] }) =>
+      api.post(`/devices/${id}/return-to-ga`, { note, licenseFieldsToRelease }).then((r) => r.data),
     onSuccess: () => qc.invalidateQueries({ queryKey: ["devices"] }),
   });
 };

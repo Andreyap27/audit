@@ -141,6 +141,7 @@ export default function AuditLogPage() {
     {
       id: "user",
       header: "User",
+      enableSorting: false,
       accessorFn: (row) => row.user?.username ?? "system",
       cell: ({ row }) => (
         <span className="font-medium">

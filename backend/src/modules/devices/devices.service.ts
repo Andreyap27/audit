@@ -455,18 +455,28 @@ export const reassignDevice = async (
   return updated;
 };
 
+const VALID_LICENSE_FIELDS = new Set([
+  "operatingSystemId", "officeId", "visioId", "projectId", "accessId",
+]);
+
 export const returnDeviceToGA = async (
   id: string,
   note: string,
   userId: string,
+  licenseFieldsToRelease: string[] = [],
 ) => {
   const existing = await prisma.device.findUnique({ where: { id } });
   if (!existing || !existing.isActive)
     throw new AppError("Device not found", 404);
 
+  const releaseData: Record<string, null> = {};
+  for (const field of licenseFieldsToRelease) {
+    if (VALID_LICENSE_FIELDS.has(field)) releaseData[field] = null;
+  }
+
   const device = await prisma.device.update({
     where: { id },
-    data: { isActive: false, returnedToGAAt: new Date(), returnedToGANote: note, reactivationNote: null },
+    data: { isActive: false, returnedToGAAt: new Date(), returnedToGANote: note, reactivationNote: null, ...releaseData },
   });
 
   await prisma.auditLog.create({
@@ -481,6 +491,7 @@ export const returnDeviceToGA = async (
   });
 
   for (const { field, kind } of LICENSE_KINDS) {
+    if (!licenseFieldsToRelease.includes(field)) continue;
     const lid = existing[field];
     if (lid) await saveLicenseHistory("UNASSIGNED", kind, lid, id, existing.serialNumber, existing.userName);
   }

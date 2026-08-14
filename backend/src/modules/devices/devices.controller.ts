@@ -140,7 +140,7 @@ export const returnToGA = async (
   next: NextFunction,
 ): Promise<void> => {
   try {
-    const { note } = req.body as { note?: string };
+    const { note, licenseFieldsToRelease } = req.body as { note?: string; licenseFieldsToRelease?: string[] };
     if (!note || !note.trim()) {
       res.status(400).json({ message: "Catatan wajib diisi sebelum dikembalikan ke GA" });
       return;
@@ -149,6 +149,7 @@ export const returnToGA = async (
       req.params.id as string,
       note.trim(),
       req.user!.id,
+      licenseFieldsToRelease ?? [],
     );
     res.json(device);
   } catch (err) {

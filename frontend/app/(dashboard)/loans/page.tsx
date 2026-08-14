@@ -116,6 +116,7 @@ export default function LoansPage() {
     {
       id: "unitType",
       header: "Jenis Perangkat",
+      enableSorting: false,
       accessorFn: (row) => row.device?.unitType?.name ?? "",
       cell: ({ row }) => (
         <Badge variant="outline">
@@ -126,6 +127,7 @@ export default function LoansPage() {
     {
       id: "deviceUser",
       header: "Nama User",
+      enableSorting: false,
       accessorFn: (row) => row.device?.userName ?? "",
       cell: ({ row }) => (
         <span className="text-sm">{row.original.device?.userName ?? "-"}</span>
@@ -134,6 +136,7 @@ export default function LoansPage() {
     {
       id: "department",
       header: "Departemen",
+      enableSorting: false,
       accessorFn: (row) => row.device?.department?.name ?? "",
       cell: ({ row }) => row.original.device?.department?.name ?? "-",
     },
