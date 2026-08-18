@@ -232,6 +232,7 @@ export default function LoanReportPage() {
     {
       id: "photo",
       header: "",
+      enableSorting: false,
       cell: ({ row }) =>
         row.original.returnPhotoPath ? (
           <Button

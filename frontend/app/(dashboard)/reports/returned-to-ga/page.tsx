@@ -146,6 +146,7 @@ export default function ReturnedToGAPage() {
     {
       id: "no",
       header: "No",
+      enableSorting: false,
       cell: ({ row }) => (
         <span className="text-xs text-muted-foreground">
           {(page - 1) * PAGE_SIZE + row.index + 1}
